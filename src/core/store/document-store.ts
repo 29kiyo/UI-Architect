@@ -1,4 +1,10 @@
-import { enablePatches, produceWithPatches, type Draft, type Patch } from 'immer'
+import {
+  applyPatches as immerApplyPatches,
+  enablePatches,
+  produceWithPatches,
+  type Draft,
+  type Patch,
+} from 'immer'
 import { createStore } from 'zustand/vanilla'
 import type { UIDocument } from '../model'
 
@@ -12,6 +18,8 @@ export type DocumentState = {
   update: (recipe: (draft: Draft<UIDocument>) => void) => UpdateResult
   // ドキュメント全体の差し替え(読込・復旧用。履歴は呼び出し側で扱う)
   replace: (doc: UIDocument) => void
+  // patches を順に適用する(Undo/Redo 用)
+  applyPatches: (patches: Patch[]) => void
 }
 
 export function createDocumentStore(initial: UIDocument) {
@@ -23,6 +31,9 @@ export function createDocumentStore(initial: UIDocument) {
       return { patches, inversePatches }
     },
     replace: (doc) => set({ doc }),
+    applyPatches: (patches) => {
+      if (patches.length > 0) set({ doc: immerApplyPatches(get().doc, patches) })
+    },
   }))
 }
 

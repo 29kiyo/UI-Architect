@@ -14,3 +14,28 @@ coverage/
 *.local
 .DS_Store
 Thumbs.db
+
+# test / tooling outputs
+*.tsbuildinfo
+.vitest/
+test-results/
+playwright-report/
+blob-report/
+.eslintcache
+*.tmp
+*.bak
+*.orig
+
+# scratch (動作確認用の一時ファイル)
+_*.ts
+_*.tsx
+_vite_tmp/
+tmp/
+scratch/
+
+# release outputs
+*.zip
+
+# editors / OS
+.idea/
+*.swp

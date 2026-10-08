@@ -1,0 +1,63 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'リリースのバージョン(例: v1.0.0)。タグ名とファイル名に使われます'
+        required: true
+        default: 'v1.0.0'
+        type: string
+
+# 同じブランチの古い実行は自動キャンセル
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Validate version
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "version は v1.0.0 の形式で入力してください: $VERSION"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      - name: Release
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "リリース $VERSION は既に存在します"
+            exit 1
+          fi
+          FILE="ui-architect-${VERSION}.zip"
+          (cd dist && zip -r "../$FILE" .)
+          gh release create "$VERSION" "$FILE" \
+            --target "$GITHUB_SHA" \
+            --title "$VERSION" \
+            --generate-notes

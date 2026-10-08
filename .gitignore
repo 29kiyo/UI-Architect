@@ -1,0 +1,16 @@
+# 設計書(リポジトリに含めない)
+docs/
+
+# deps / build
+node_modules/
+dist/
+build/
+coverage/
+*.log
+
+# secrets / local
+.env
+.env.*
+*.local
+.DS_Store
+Thumbs.db

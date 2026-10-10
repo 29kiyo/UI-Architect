@@ -14,7 +14,14 @@ export function createNode(partial: Partial<Node> & Pick<Node, 'type'>): Node {
 
 export function createPage(name = 'Page 1', route = '/'): Page {
   const root = createNode({ type: 'element', name: 'Root' })
-  return { id: newId(), name, route, rootNodeId: root.id, nodes: { [root.id]: root } }
+  return {
+    id: newId(),
+    name,
+    route,
+    rootNodeId: root.id,
+    nodes: { [root.id]: root },
+    overrides: {},
+  }
 }
 
 export function createDevice(kind: Device['kind'] = 'pc'): Device {

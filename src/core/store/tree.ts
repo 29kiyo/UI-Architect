@@ -94,6 +94,10 @@ export function removeNode(page: Page, id: Id): Id[] {
     parent.children = parent.children.filter((c) => c !== id)
   }
   for (const rid of removed) delete page.nodes[rid]
+  for (const [deviceId, byNode] of Object.entries(page.overrides)) {
+    for (const rid of removed) delete byNode[rid]
+    if (Object.keys(byNode).length === 0) delete page.overrides[deviceId]
+  }
   return removed
 }
 

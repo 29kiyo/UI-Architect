@@ -1,3 +1,7 @@
 export * from './model'
 export * from './store'
 export * from './history'
+export * from './device'
+export * from './component'
+export * from './expr'
+export * from './data'

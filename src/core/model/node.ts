@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { IdSchema } from './ids'
 import { PropsSchema } from './props'
+import { InstanceOverrideSchema } from './override'
 
 // アクションの詳細は Phase 9 で拡張する。判別キーは type。
 export const ActionSchema = z.discriminatedUnion('type', [
@@ -33,7 +34,9 @@ export type UIEvent = z.infer<typeof EventSchema>
 export const ComponentRefSchema = z.object({
   componentId: IdSchema,
   variantId: IdSchema.optional(),
-  overrides: z.record(z.string(), z.json()).default({}),
+  overrides: z.record(IdSchema, InstanceOverrideSchema).default({}),
+  // slotId → インスタンスノードの children のうち、そのスロットに入れる子
+  slotContent: z.record(IdSchema, z.array(IdSchema)).default({}),
 })
 export type ComponentRef = z.infer<typeof ComponentRefSchema>
 

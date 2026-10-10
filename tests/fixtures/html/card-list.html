@@ -1,0 +1,23 @@
+<style>
+  .list { display: flex; gap: 16px; padding: 16px; }
+  .item { width: 200px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); overflow: hidden; background: white; }
+  .item img { width: 100%; height: 120px; }
+  .item .body { padding: 12px; }
+  .item h2 { font-size: 16px; margin: 0 0 4px; }
+  .item p { font-size: 13px; color: #555; margin: 0; }
+  .banner { background-image: url(https://example.com/banner.png); height: 60px; }
+</style>
+<div class="banner"></div>
+<div class="list">
+  <div class="item">
+    <img src="https://example.com/a.png" alt="A">
+    <div class="body"><h2>カードA</h2><p>説明文A</p></div>
+  </div>
+  <div class="item">
+    <img src="images/b.png" alt="B">
+    <div class="body"><h2>カードB</h2><p>説明文B</p></div>
+  </div>
+  <div class="item" style="display:none">
+    <div class="body"><h2>非表示</h2></div>
+  </div>
+</div>

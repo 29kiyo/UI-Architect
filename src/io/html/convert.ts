@@ -30,7 +30,7 @@ const UNSUPPORTED = new Set(['video', 'audio', 'canvas', 'picture', 'map'])
 const norm = (s: string) => s.replace(/\s+/g, ' ').trim()
 const round = (n: number) => Math.round(n * 100) / 100
 
-function fullProps(parts: MappedProps): Props {
+export function fullProps(parts: MappedProps): Props {
   const out: Record<string, PropGroup> = {}
   for (const k of PROP_GROUP_KEYS) out[k] = { ...(parts[k] ?? {}) }
   return out as Props

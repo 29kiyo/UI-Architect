@@ -1,0 +1,17 @@
+<style>
+  .row { display: flex; align-items: center; justify-content: space-between; width: 280px; padding: 12px; }
+  .switch { position: relative; width: 44px; height: 24px; background: #ccc; border-radius: 12px; }
+  .switch .knob { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: left 0.2s; }
+  .switch.on { background: #22c55e; }
+  .switch.on .knob { left: 22px; }
+  .switch:hover { opacity: 0.9; }
+</style>
+<div class="row">
+  <span>通知</span>
+  <div class="switch on" role="switch" aria-label="通知" onclick="this.classList.toggle('on'); window.__fixtureExecuted = true">
+    <div class="knob"></div>
+  </div>
+</div>
+<script>
+  document.querySelector('.switch').addEventListener('click', () => { window.__fixtureExecuted = true })
+</script>

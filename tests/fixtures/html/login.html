@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Login</title>
+<link rel="stylesheet" href="https://example.com/app.css">
+<style>
+  body { font-family: sans-serif; background: #f5f5f5; }
+  .card { width: 320px; padding: 24px; border: 1px solid #ddd; border-radius: 8px; background: #fff; display: flex; flex-direction: column; gap: 12px; }
+  .card h1 { font-size: 20px; margin: 0; }
+  input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+  button { padding: 10px; background: #2563eb; color: #fff; border: 0; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+  button:hover { background-color: #1d4ed8; }
+  button:disabled { opacity: 0.5; }
+</style>
+</head>
+<body>
+<div class="card" id="login">
+  <h1>ログイン</h1>
+  <input type="email" placeholder="メールアドレス">
+  <input type="password" placeholder="パスワード">
+  <button onclick="window.__fixtureExecuted = true">ログイン</button>
+  <a href="/forgot">パスワードを忘れた方</a>
+</div>
+<script>window.__fixtureExecuted = true</script>
+</body>
+</html>

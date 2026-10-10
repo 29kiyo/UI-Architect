@@ -32,7 +32,7 @@ const restrict = (dir, allowed) => ({
 })
 
 export default defineConfig([
-  globalIgnores(['dist', 'coverage', 'docs']),
+  globalIgnores(['dist', 'coverage', 'docs', 'tests/fixtures']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

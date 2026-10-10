@@ -144,3 +144,12 @@ export async function fromUrl(url: string, options: FromUrlOptions = {}): Promis
     })
   })
 }
+
+// ImportInput からテキストを取り出す(text 優先。無ければテキスト系の data を UTF-8 で復号)
+export function readInputText(input: ImportInput): string | undefined {
+  if (input.text !== undefined) return input.text
+  if (input.data && isTextLike(input.name, input.mime)) {
+    return new TextDecoder('utf-8').decode(input.data)
+  }
+  return undefined
+}

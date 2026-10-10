@@ -124,3 +124,11 @@ export const styleGetterFrom =
   (styles: Record<string, string>): StyleGetter =>
   (name) =>
     styles[name] ?? ''
+
+const MAPPED_NAMES = new Set<string>([
+  ...SIMPLE.map(([, css]) => css),
+  ...SIDES.flatMap((s) => [`border-${s}-width`, `border-${s}-style`, `border-${s}-color`]),
+  ...CORNERS.map((c) => `border-${c}-radius`),
+  'transform-origin',
+])
+export const isMappedCssName = (name: string): boolean => MAPPED_NAMES.has(name)

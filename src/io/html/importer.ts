@@ -1,5 +1,5 @@
 import type { ImportContext, ImportInput, ImportResult, Importer } from '@/core'
-import { isTextLike } from '../input'
+import { readInputText as readText } from '../input'
 import { sanitizeHtml, type DomWindow } from '../sanitize'
 import { convertDom, type ConvertSource } from './convert'
 import { buildStateResolver } from './states'
@@ -29,14 +29,6 @@ const NON_HTML_EXTS = [
   'swift',
   'kt',
 ]
-
-function readText(input: ImportInput): string | undefined {
-  if (input.text !== undefined) return input.text
-  if (input.data && isTextLike(input.name, input.mime)) {
-    return new TextDecoder('utf-8').decode(input.data)
-  }
-  return undefined
-}
 
 export function detectHtml(input: ImportInput): number {
   const text = readText(input)

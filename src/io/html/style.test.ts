@@ -60,6 +60,20 @@ describe('mapComputedStyle', () => {
     expect(r.radius).toEqual({ borderTopLeftRadius: '8px' })
   })
 
+  it('ロングハンドが無くショートハンドだけある場合は先頭値を4角に使う', () => {
+    const r = map({ 'border-radius': '12px', 'border-top-left-radius': '0' })
+    expect(r.radius).toEqual({
+      borderTopLeftRadius: '12px',
+      borderTopRightRadius: '12px',
+      borderBottomRightRadius: '12px',
+      borderBottomLeftRadius: '12px',
+    })
+  })
+
+  it('text-shadow の透明は出力しない', () => {
+    expect(map({ 'text-shadow': 'rgba(0, 0, 0, 0)' }).shadow).toBeUndefined()
+  })
+
   it('transform-origin は transform があるときだけ', () => {
     expect(map({ 'transform-origin': '50px 50px' }).transform).toBeUndefined()
     expect(map({ transform: 'rotate(10deg)', 'transform-origin': '50px 50px' }).transform).toEqual({

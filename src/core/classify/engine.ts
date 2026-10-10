@@ -30,7 +30,7 @@ export function classifyNode(
   const best = new Map<string, { score: number; ruleId: string }>()
   for (const rule of ruleRegistry.list()) {
     if (!isKnownCategory(rule.category)) continue
-    let s = 0
+    let s: number
     try {
       s = rule.score(f)
     } catch {

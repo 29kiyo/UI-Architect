@@ -52,7 +52,7 @@ const SIMPLE: [keyof Props, string, string[]][] = [
   ['appearance', 'cursor', ['auto']],
   ['appearance', 'visibility', ['visible']],
   ['shadow', 'box-shadow', ['none']],
-  ['shadow', 'text-shadow', ['none']],
+  ['shadow', 'text-shadow', ['none', ...TRANSPARENT]],
   ['effects', 'filter', ['none']],
   ['effects', 'backdrop-filter', ['none']],
   ['transform', 'transform', ['none']],
@@ -111,9 +111,23 @@ export function mapComputedStyle(get: StyleGetter): MappedProps {
   }
 
   // 角丸
+  let anyCorner = false
   for (const corner of CORNERS) {
     const v = get(`border-${corner}-radius`).trim()
-    if (v !== '' && !ZERO.includes(v)) put('radius', camel(`border-${corner}-radius`), v)
+    if (v !== '' && !ZERO.includes(v)) {
+      put('radius', camel(`border-${corner}-radius`), v)
+      anyCorner = true
+    }
+  }
+  // ロングハンドが取れない環境(jsdom 等)向けに、ショートハンドの先頭値を4角へ使う(近似。正確な展開は Phase 6)
+  if (!anyCorner) {
+    const first =
+      get('border-radius')
+        .trim()
+        .split(/[\s/]+/)[0] ?? ''
+    if (first !== '' && !ZERO.includes(first)) {
+      for (const corner of CORNERS) put('radius', camel(`border-${corner}-radius`), first)
+    }
   }
 
   return out

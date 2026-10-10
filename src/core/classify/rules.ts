@@ -114,7 +114,7 @@ const CLASSES: [string, string, number][] = [
   ['header', 'header', 0.6],
   ['footer', 'footer', 0.6],
   ['list', 'list', 0.6],
-  ['item', 'list-item', 0.5],
+  ['item', 'list-item', 0.4],
   ['divider', 'divider', 0.7],
   ['separator', 'divider', 0.7],
   ['icon', 'icon', 0.7],

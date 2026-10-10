@@ -1,0 +1,11 @@
+{
+  "source": "login.html",
+  "expected": [
+    ["div#login", "card"],
+    ["h1", "text-heading"],
+    ["input", "input-text"],
+    ["input", "input-text"],
+    ["button", "button"],
+    ["a", "link"]
+  ]
+}

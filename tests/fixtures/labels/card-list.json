@@ -1,0 +1,20 @@
+{
+  "source": "card-list.html",
+  "expected": [
+    ["div.banner", "container"],
+    ["div.list", "list"],
+    ["div.item", "card"],
+    ["img", "image"],
+    ["div.body", "container"],
+    ["h2", "text-heading"],
+    ["p", "text-body"],
+    ["div.item", "card"],
+    ["img", "image"],
+    ["div.body", "container"],
+    ["h2", "text-heading"],
+    ["p", "text-body"],
+    ["div.item", "card"],
+    ["div.body", "container"],
+    ["h2", "text-heading"]
+  ]
+}

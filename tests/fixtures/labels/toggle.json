@@ -1,0 +1,9 @@
+{
+  "source": "toggle.html",
+  "expected": [
+    ["div.row", "container"],
+    ["span", "text-body"],
+    ["div.switch", "toggle"],
+    ["div.knob", "container"]
+  ]
+}

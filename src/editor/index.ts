@@ -29,3 +29,14 @@ export {
   artboardForMarquee,
 } from './canvas/target'
 export { hitFromElement, measureWorldRect } from './canvas/hit'
+export { createPropsCommand, createReorderCommand, isBaseDevice } from './canvas/commands'
+export type { PropWrite } from './canvas/commands'
+export {
+  resizeRect,
+  moveKind,
+  reorderTarget,
+  applyReorder,
+  getRotation,
+  setRotation,
+} from './canvas/transform'
+export type { HandleId, Line } from './canvas/transform'

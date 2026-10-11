@@ -35,3 +35,22 @@ export function measureWorldRect(
   })
   return { x: p.x, y: p.y, width: r.width / vp.zoom, height: r.height / vp.zoom }
 }
+
+// content-box の要素は width/height に padding と border が加わる。その合計(border-box なら 0)
+export function measureBoxExtra(
+  container: HTMLElement,
+  deviceId: Id,
+  nodeId: Id,
+): { w: number; h: number } {
+  const el = container.querySelector<HTMLElement>(
+    `[data-device-id="${cssStr(deviceId)}"] [data-node-id="${cssStr(nodeId)}"]`,
+  )
+  if (!el) return { w: 0, h: 0 }
+  const cs = getComputedStyle(el)
+  if (cs.boxSizing === 'border-box') return { w: 0, h: 0 }
+  const f = (k: string) => parseFloat(cs.getPropertyValue(k)) || 0
+  return {
+    w: f('padding-left') + f('padding-right') + f('border-left-width') + f('border-right-width'),
+    h: f('padding-top') + f('padding-bottom') + f('border-top-width') + f('border-bottom-width'),
+  }
+}

@@ -1,10 +1,20 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { UIDocument } from '@/core'
+import { resolveNode, type History, type UIDocument } from '@/core'
 import { layoutArtboards, unionRect } from './artboard'
 import { CanvasOverlay } from './CanvasOverlay'
 import { NodeView } from './NodeView'
 import { hitFromElement, measureWorldRect } from './hit'
+import {
+  finishGesture,
+  startMove,
+  startResize,
+  startRotate,
+  updateGesture,
+  type Gesture,
+  type GestureCtx,
+} from './gesture'
 import { selectionStore, useSelection } from './selection'
+import { getRotation, isHandleId, type Line } from './transform'
 import { artboardForMarquee, marqueeTargets, normalizeRect, resolveTarget } from './target'
 import {
   DEFAULT_VIEWPORT,
@@ -19,6 +29,7 @@ import {
 
 type Props = {
   doc: UIDocument
+  history: History
   pageId?: string | undefined
   language: 'ja' | 'en'
   height?: number | string
@@ -41,7 +52,7 @@ const TEXT = {
   },
 } as const
 
-export function Canvas({ doc, pageId, language, height = '70vh' }: Props) {
+export function Canvas({ doc, history, pageId, language, height = '70vh' }: Props) {
   const t = TEXT[language]
   const ref = useRef<HTMLDivElement>(null)
   const drag = useRef<{ x: number; y: number } | null>(null)
@@ -56,6 +67,8 @@ export function Canvas({ doc, pageId, language, height = '70vh' }: Props) {
     null,
   )
   const [marqueeRect, setMarqueeRect] = useState<WorldRect | null>(null)
+  const gesture = useRef<Gesture | null>(null)
+  const [drop, setDrop] = useState<Line | undefined>(undefined)
   const [boxes, setBoxes] = useState<{ selected: WorldRect[]; hover?: WorldRect | undefined }>({
     selected: [],
   })
@@ -89,6 +102,16 @@ export function Canvas({ doc, pageId, language, height = '70vh' }: Props) {
   useLayoutEffect(() => {
     measure()
   }, [measure])
+
+  // ハンドルは単一選択のときだけ。回転済みはリサイズ不可(回転ハンドルのみ)
+  const handleInfo = useMemo(() => {
+    const id = selectedIds[0]
+    const rect = boxes.selected[0]
+    if (!page || !activeDeviceId || !id || !rect) return undefined
+    if (selectedIds.length !== 1 || boxes.selected.length !== 1) return undefined
+    const tf = resolveNode(page, activeDeviceId, id)?.props.transform.transform
+    return { rect, rotated: getRotation(typeof tf === 'string' ? tf : '') !== 0 }
+  }, [page, activeDeviceId, selectedIds, boxes.selected])
 
   const fit = useCallback((): boolean => {
     const el = ref.current
@@ -138,6 +161,25 @@ export function Canvas({ doc, pageId, language, height = '70vh' }: Props) {
     })
   }
 
+  const ptr = (e: { clientX: number; clientY: number }): Point => ({ x: e.clientX, y: e.clientY })
+  const makeCtx = (): GestureCtx | undefined => {
+    const el = ref.current
+    return el && page ? { doc, page, history, el, vp } : undefined
+  }
+
+  const beginHandle = (e: React.PointerEvent<HTMLDivElement>, name: string) => {
+    const c = makeCtx()
+    const id = selectedIds[0]
+    if (!c || !activeDeviceId || !id || selectedIds.length !== 1) return
+    const world = toWorld(e)
+    gesture.current =
+      name === 'rotate'
+        ? (startRotate(c, activeDeviceId, id, world, ptr(e)) ?? null)
+        : isHandleId(name)
+          ? (startResize(c, activeDeviceId, id, name, world, ptr(e)) ?? null)
+          : null
+  }
+
   // 左ボタン: ノード上なら即選択、空白なら矩形選択の開始
   const beginSelect = (e: React.PointerEvent<HTMLDivElement>) => {
     const sel = selectionStore.getState()
@@ -145,7 +187,15 @@ export function Canvas({ doc, pageId, language, height = '70vh' }: Props) {
     const target =
       hit && page ? resolveTarget(page, hit.nodeId, sel.selectedIds, 'click') : undefined
     if (hit && target) {
-      sel.pick(target, hit.deviceId, e.shiftKey)
+      // 選択済みノードを(Shift なしで)押した場合は、複数選択を保ったまま移動できるようにする
+      const keep =
+        !e.shiftKey && sel.activeDeviceId === hit.deviceId && sel.selectedIds.includes(target)
+      if (!keep) sel.pick(target, hit.deviceId, e.shiftKey)
+      const c = makeCtx()
+      const ids = selectionStore.getState().selectedIds
+      if (c && ids.includes(target)) {
+        gesture.current = startMove(c, hit.deviceId, ids, toWorld(e), ptr(e)) ?? null
+      }
       return
     }
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -165,7 +215,9 @@ export function Canvas({ doc, pageId, language, height = '70vh' }: Props) {
       drag.current = { x: e.clientX, y: e.clientY }
       setPanning(true)
     } else if (e.button === 0) {
-      beginSelect(e)
+      const h = e.target instanceof Element ? e.target.closest('[data-handle]') : null
+      if (h) beginHandle(e, h.getAttribute('data-handle') ?? '')
+      else beginSelect(e)
     }
   }
 
@@ -177,6 +229,20 @@ export function Canvas({ doc, pageId, language, height = '70vh' }: Props) {
   }
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const g = gesture.current
+    if (g) {
+      const c = makeCtx()
+      if (c) {
+        const input = { world: toWorld(e), px: ptr(e), shift: e.shiftKey, alt: e.altKey }
+        const fb = updateGesture(c, g, input)
+        // ダブルクリックの対象を壊さないよう、実際にドラッグが始まってからキャプチャする
+        if (g.started && !e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.setPointerCapture(e.pointerId)
+        }
+        setDrop(fb.drop)
+      }
+      return
+    }
     const d = drag.current
     if (d) {
       drag.current = { x: e.clientX, y: e.clientY }
@@ -196,6 +262,14 @@ export function Canvas({ doc, pageId, language, height = '70vh' }: Props) {
   const endPointer = (e: React.PointerEvent<HTMLDivElement>, commit: boolean) => {
     drag.current = null
     setPanning(false)
+    const g = gesture.current
+    if (g) {
+      gesture.current = null
+      setDrop(undefined)
+      const c = makeCtx()
+      if (c && commit) finishGesture(c, g)
+      return
+    }
     const m = marquee.current
     marquee.current = null
     setMarqueeRect(null)
@@ -331,6 +405,8 @@ export function Canvas({ doc, pageId, language, height = '70vh' }: Props) {
           selected={boxes.selected}
           hover={boxes.hover}
           marquee={marqueeRect ?? undefined}
+          handles={handleInfo}
+          drop={drop}
         />
       </div>
     </section>

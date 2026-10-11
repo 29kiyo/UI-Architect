@@ -1,5 +1,8 @@
 import type { Artboard } from './artboard'
+import { HANDLE_CURSOR, HANDLE_IDS, handlePoint, type Line } from './transform'
 import type { Viewport, WorldRect } from './viewport'
+
+export type HandleInfo = { rect: WorldRect; rotated: boolean }
 
 type Props = {
   viewport: Viewport
@@ -7,10 +10,20 @@ type Props = {
   selected?: WorldRect[] | undefined
   hover?: WorldRect | undefined
   marquee?: WorldRect | undefined
+  handles?: HandleInfo | undefined
+  drop?: Line | undefined
 }
 
 // 選択枠・ホバー枠・矩形選択の重ねレイヤー(5-C 以降でハンドル/ガイドを追加)
-export function CanvasOverlay({ viewport, artboards, selected = [], hover, marquee }: Props) {
+export function CanvasOverlay({
+  viewport,
+  artboards,
+  selected = [],
+  hover,
+  marquee,
+  handles,
+  drop,
+}: Props) {
   return (
     <svg
       width="100%"
@@ -56,6 +69,18 @@ export function CanvasOverlay({ viewport, artboards, selected = [], hover, marqu
             vectorEffect="non-scaling-stroke"
           />
         ))}
+        {drop && (
+          <line
+            x1={drop.x1}
+            y1={drop.y1}
+            x2={drop.x2}
+            y2={drop.y2}
+            stroke="var(--accent)"
+            strokeWidth={3}
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
+        {handles && <Handles info={handles} zoom={viewport.zoom} />}
         {marquee && (
           <rect
             x={marquee.x}
@@ -70,5 +95,54 @@ export function CanvasOverlay({ viewport, artboards, selected = [], hover, marqu
         )}
       </g>
     </svg>
+  )
+}
+
+// 8 方向のリサイズハンドルと回転ハンドル(画面上のサイズは一定)。操作は Canvas 側の pointerdown で処理
+function Handles({ info, zoom }: { info: HandleInfo; zoom: number }) {
+  const s = 8 / zoom
+  const top = handlePoint(info.rect, 'n')
+  const rot = { x: top.x, y: top.y - 24 / zoom }
+  return (
+    <g>
+      <line
+        x1={top.x}
+        y1={top.y}
+        x2={rot.x}
+        y2={rot.y}
+        stroke="var(--accent)"
+        vectorEffect="non-scaling-stroke"
+      />
+      <circle
+        data-handle="rotate"
+        cx={rot.x}
+        cy={rot.y}
+        r={5 / zoom}
+        fill="var(--bg)"
+        stroke="var(--accent)"
+        strokeWidth={1.5}
+        vectorEffect="non-scaling-stroke"
+        style={{ pointerEvents: 'all', cursor: 'grab' }}
+      />
+      {!info.rotated &&
+        HANDLE_IDS.map((h) => {
+          const p = handlePoint(info.rect, h)
+          return (
+            <rect
+              key={h}
+              data-handle={h}
+              x={p.x - s / 2}
+              y={p.y - s / 2}
+              width={s}
+              height={s}
+              fill="var(--bg)"
+              stroke="var(--accent)"
+              strokeWidth={1.5}
+              vectorEffect="non-scaling-stroke"
+              style={{ pointerEvents: 'all', cursor: HANDLE_CURSOR[h] }}
+            />
+          )
+        })}
+    </g>
   )
 }

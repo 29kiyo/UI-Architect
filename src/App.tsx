@@ -56,7 +56,7 @@ export default function App() {
           renderAfter={(nodes, w, h) => <NodesPreview nodes={nodes} width={w} height={h} />}
         />
       )}
-      <Canvas doc={doc} language={language} />
+      <Canvas doc={doc} history={history} language={language} />
       <SettingsPanel />
       {showRunningCommands && (
         <RunningCommandsPanel title={language === 'ja' ? '実行ログ' : 'Running commands'} />

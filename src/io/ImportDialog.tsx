@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import type { Device, History, ImportInput } from '@/core'
-import { BeforeAfter } from './BeforeAfter'
+import { BeforeAfter, type RenderAfter } from './BeforeAfter'
 import { fromFiles, fromText, fromUrl } from './input'
 import { analyzeInputs, commitPrepared, outlineOf, prepareImport, type Prepared } from './prepare'
 
@@ -9,6 +9,7 @@ type Props = {
   history: History
   devices: Device[]
   language: 'ja' | 'en'
+  renderAfter: RenderAfter
 }
 
 type PreviewState = {
@@ -77,7 +78,7 @@ const TEXT = {
 
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
-export function ImportDialog({ onClose, history, devices, language }: Props) {
+export function ImportDialog({ onClose, history, devices, language, renderAfter }: Props) {
   const t = TEXT[language]
   const [inputs, setInputs] = useState<ImportInput[]>([])
   const [pasteText, setPasteText] = useState('')
@@ -339,6 +340,7 @@ export function ImportDialog({ onClose, history, devices, language }: Props) {
             <BeforeAfter
               beforeHtml={fresh.prepared.beforeHtml}
               nodes={fresh.prepared.result.nodes}
+              renderAfter={renderAfter}
               width={width ?? 1280}
               language={language}
             />

@@ -28,3 +28,5 @@ export { analyzeInputs, commitPrepared, outlineOf, prepareImport } from './prepa
 export type { Analysis, Candidate, OutlineRow, PrepareOptions, Prepared } from './prepare'
 export { ImportDialog } from './ImportDialog'
 export { arrangeResult } from './arrange'
+export { BeforeAfter } from './BeforeAfter'
+export { renderNodesHtml } from './compare'

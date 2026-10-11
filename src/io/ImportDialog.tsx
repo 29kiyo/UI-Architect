@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import type { Device, History, ImportInput } from '@/core'
+import { BeforeAfter } from './BeforeAfter'
 import { fromFiles, fromText, fromUrl } from './input'
 import { analyzeInputs, commitPrepared, outlineOf, prepareImport, type Prepared } from './prepare'
 
@@ -43,6 +44,7 @@ const TEXT = {
     outline: '構造',
     more: '…(以降省略)',
     busy: '処理中…',
+    mobile: 'スマホ用も自動生成',
   },
   en: {
     title: 'Import',
@@ -69,6 +71,7 @@ const TEXT = {
     outline: 'Structure',
     more: '... (truncated)',
     busy: 'Working...',
+    mobile: 'Also generate mobile',
   },
 } as const
 
@@ -81,6 +84,7 @@ export function ImportDialog({ onClose, history, devices, language }: Props) {
   const [url, setUrl] = useState('')
   const [importerId, setImporterId] = useState('')
   const [deviceId, setDeviceId] = useState(devices[0]?.id ?? '')
+  const [mobileId, setMobileId] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [preview, setPreview] = useState<PreviewState | null>(null)
@@ -150,7 +154,10 @@ export function ImportDialog({ onClose, history, devices, language }: Props) {
   const commit = () => {
     if (!fresh) return
     try {
-      commitPrepared(history, fresh.prepared, deviceId ? { deviceId } : {})
+      commitPrepared(history, fresh.prepared, {
+        ...(deviceId ? { deviceId } : {}),
+        ...(mobileId && mobileId !== deviceId ? { mobileDeviceId: mobileId } : {}),
+      })
       onClose()
     } catch (e) {
       setError(errMsg(e))
@@ -283,6 +290,19 @@ export function ImportDialog({ onClose, history, devices, language }: Props) {
               ))}
             </select>
           </label>{' '}
+          <label>
+            {t.mobile}{' '}
+            <select value={mobileId} onChange={(e) => setMobileId(e.target.value)}>
+              <option value="">{t.none}</option>
+              {devices
+                .filter((d) => d.id !== deviceId)
+                .map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name} ({d.width}×{d.height})
+                  </option>
+                ))}
+            </select>
+          </label>{' '}
           <button
             type="button"
             onClick={() => void runPreview()}
@@ -316,6 +336,12 @@ export function ImportDialog({ onClose, history, devices, language }: Props) {
                 </ul>
               </>
             )}
+            <BeforeAfter
+              beforeHtml={fresh.prepared.beforeHtml}
+              nodes={fresh.prepared.result.nodes}
+              width={width ?? 1280}
+              language={language}
+            />
             <strong>{t.outline}</strong>
             <div
               style={{ fontFamily: 'var(--mono)', fontSize: 13, maxHeight: 220, overflow: 'auto' }}

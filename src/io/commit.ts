@@ -1,4 +1,12 @@
-import { AssetSchema, NodeSchema, type Command, type ImportResult, type Node } from '@/core'
+import {
+  AssetSchema,
+  NodeSchema,
+  planMobile,
+  setOverrideProp,
+  type Command,
+  type ImportResult,
+  type Node,
+} from '@/core'
 
 export type CommitOptions = {
   pageId?: string // 既定: 最初のページ
@@ -6,6 +14,7 @@ export type CommitOptions = {
   index?: number // 親の children での挿入位置。既定: 末尾
   deviceId?: string // 取り込み対象デバイス(root.props.custom.sourceDeviceId に記録)
   name?: string // 履歴名の表示用。既定: ルートノード名
+  mobileDeviceId?: string // 指定時、同じ Command 内でスマホ用 overrides も生成する
 }
 
 const ASSET_REF = /asset:([^"')\s]+)/g
@@ -92,6 +101,17 @@ export function createImportCommand(result: ImportResult, options: CommitOptions
       const len = parent.children.length
       const at = options.index === undefined ? len : Math.max(0, Math.min(options.index, len))
       parent.children.splice(at, 0, root.id)
+
+      if (options.mobileDeviceId) {
+        const dev = draft.devices.find((d) => d.id === options.mobileDeviceId)
+        if (!dev) throw new Error(`デバイスが見つかりません: ${options.mobileDeviceId}`)
+        const ids = new Set(nodes.map((n) => n.id))
+        const ops = planMobile(page, dev.id, { deviceWidth: dev.width })
+        for (const op of ops) {
+          if (ids.has(op.nodeId))
+            setOverrideProp(page, dev.id, op.nodeId, op.group, op.key, op.value)
+        }
+      }
     },
   }
 }

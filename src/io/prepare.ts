@@ -8,8 +8,9 @@ import {
 } from '@/core'
 import { createImportCommand, type CommitOptions } from './commit'
 import { createDefaultImporters } from './defaults'
-import type { FetchFn } from './input'
+import { readInputText, type FetchFn } from './input'
 import { filesFromInputs, resolveResources, type AssetData } from './resources'
+import { sanitizeHtml } from './sanitize'
 import { detectImporters, runImport } from './select'
 import { arrangeResult } from './arrange'
 
@@ -38,6 +39,7 @@ export type Prepared = {
   result: ImportResult
   assetData: Map<string, AssetData>
   ignored: string[]
+  beforeHtml?: string // 取り込み元の(サニタイズ済み)HTML。比較表示用。HTML のみ
 }
 
 function importersFor(o: Pick<PrepareOptions, 'importers' | 'width'>): Importer[] {
@@ -120,8 +122,20 @@ export async function prepareImport(
     ...resolved.result.warnings,
     ...ignored.map((n) => `別の文書 ${n} は取り込んでいません(1回の取り込みは1文書)`),
   ]
+  let beforeHtml: string | undefined
+  if (run.importerId === 'html') {
+    const t = readInputText(primary)
+    if (t !== undefined) {
+      try {
+        beforeHtml = sanitizeHtml(t, globalThis.window).html
+      } catch {
+        beforeHtml = undefined // 比較表示なしで続行
+      }
+    }
+  }
   return {
     importerId: run.importerId,
+    ...(beforeHtml !== undefined ? { beforeHtml } : {}),
     result:
       options.arrange === false
         ? { ...resolved.result, warnings }

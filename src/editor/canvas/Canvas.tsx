@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { resolveNode, type History, type UIDocument } from '@/core'
 import { layoutArtboards, unionRect } from './artboard'
+import { AlignBar } from './AlignBar'
 import { CanvasOverlay } from './CanvasOverlay'
 import { Ruler } from './Ruler'
 import { NodeView } from './NodeView'
@@ -372,6 +373,14 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
         </label>{' '}
         <small>{t.hint}</small>
       </div>
+      <AlignBar
+        doc={doc}
+        page={page}
+        history={history}
+        containerRef={ref}
+        vp={vp}
+        language={language}
+      />
       <div
         ref={ref}
         tabIndex={0}

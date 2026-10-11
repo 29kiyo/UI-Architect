@@ -72,3 +72,8 @@ export {
   createMoveToCommand,
   createNodeMetaCommand,
 } from './canvas/nodeCommands'
+export { alignDeltas, distributeDeltas, alignEligible } from './canvas/align'
+export type { AlignKind } from './canvas/align'
+export { planAutoLayout, createAutoLayoutCommand, visualOrder } from './canvas/autoLayout'
+export { runAlign, runAutoLayout } from './canvas/alignActions'
+export { AlignBar } from './canvas/AlignBar'

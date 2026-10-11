@@ -45,7 +45,7 @@ export type GestureInput = {
 }
 export type GestureFeedback = { drop?: Line | undefined; guides?: Line[] | undefined }
 
-type MoveItem = {
+export type MoveItem = {
   id: Id
   left: number
   top: number
@@ -110,7 +110,7 @@ function parentOf(ctx: GestureCtx, deviceId: Id, id: Id) {
 }
 
 // left/top の開始値。px で書かれていなければ実測(親の矩形からの相対。近似)
-function moveItem(
+export function moveItem(
   ctx: GestureCtx,
   deviceId: Id,
   node: Node,
@@ -136,7 +136,7 @@ function moveItem(
   }
 }
 
-function positionWrites(it: MoveItem, left?: number, top?: number): PropWrite[] {
+export function positionWrites(it: MoveItem, left?: number, top?: number): PropWrite[] {
   const out: PropWrite[] = []
   if (left !== undefined) {
     out.push({ nodeId: it.id, group: 'position', key: 'left', value: px(left) })

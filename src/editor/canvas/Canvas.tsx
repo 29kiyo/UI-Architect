@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { resolveNode, type History, type UIDocument } from '@/core'
 import { layoutArtboards, unionRect } from './artboard'
 import { CanvasOverlay } from './CanvasOverlay'
+import { Ruler } from './Ruler'
 import { NodeView } from './NodeView'
 import { hitFromElement, measureWorldRect } from './hit'
 import {
@@ -41,14 +42,22 @@ const TEXT = {
     reset: '100%',
     zoomIn: '拡大',
     zoomOut: '縮小',
-    hint: 'Ctrl+ホイール: ズーム / Space+ドラッグ: 移動',
+    hint: 'Ctrl+ホイール: ズーム / Space+ドラッグ: パン / ドラッグ中 Ctrl: スナップ解除',
+    snap: 'スナップ',
+    grid: 'グリッド',
+    gridSize: 'グリッド間隔',
+    ruler: '定規',
   },
   en: {
     fit: 'Fit',
     reset: '100%',
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',
-    hint: 'Ctrl+wheel: zoom / Space+drag: pan',
+    hint: 'Ctrl+wheel: zoom / Space+drag: pan / hold Ctrl while dragging: no snap',
+    snap: 'Snap',
+    grid: 'Grid',
+    gridSize: 'Grid size',
+    ruler: 'Rulers',
   },
 } as const
 
@@ -69,6 +78,11 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
   const [marqueeRect, setMarqueeRect] = useState<WorldRect | null>(null)
   const gesture = useRef<Gesture | null>(null)
   const [drop, setDrop] = useState<Line | undefined>(undefined)
+  const [guides, setGuides] = useState<Line[]>([])
+  const [snapOn, setSnapOn] = useState(true)
+  const [gridOn, setGridOn] = useState(false)
+  const [gridSize, setGridSize] = useState(8)
+  const [rulerOn, setRulerOn] = useState(true)
   const [boxes, setBoxes] = useState<{ selected: WorldRect[]; hover?: WorldRect | undefined }>({
     selected: [],
   })
@@ -233,13 +247,21 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
     if (g) {
       const c = makeCtx()
       if (c) {
-        const input = { world: toWorld(e), px: ptr(e), shift: e.shiftKey, alt: e.altKey }
+        const input = {
+          world: toWorld(e),
+          px: ptr(e),
+          shift: e.shiftKey,
+          alt: e.altKey,
+          snap: snapOn && !e.ctrlKey && !e.metaKey,
+          grid: gridOn ? gridSize : 0,
+        }
         const fb = updateGesture(c, g, input)
         // ダブルクリックの対象を壊さないよう、実際にドラッグが始まってからキャプチャする
         if (g.started && !e.currentTarget.hasPointerCapture(e.pointerId)) {
           e.currentTarget.setPointerCapture(e.pointerId)
         }
         setDrop(fb.drop)
+        setGuides(fb.guides ?? [])
       }
       return
     }
@@ -266,6 +288,7 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
     if (g) {
       gesture.current = null
       setDrop(undefined)
+      setGuides([])
       const c = makeCtx()
       if (c && commit) finishGesture(c, g)
       return
@@ -316,6 +339,29 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
         <button type="button" onClick={() => setVp((v) => zoomAt(v, { x: 0, y: 0 }, 1))}>
           {t.reset}
         </button>{' '}
+        <label>
+          <input type="checkbox" checked={snapOn} onChange={(e) => setSnapOn(e.target.checked)} />{' '}
+          {t.snap}
+        </label>{' '}
+        <label>
+          <input type="checkbox" checked={gridOn} onChange={(e) => setGridOn(e.target.checked)} />{' '}
+          {t.grid}
+        </label>{' '}
+        <select
+          value={gridSize}
+          aria-label={t.gridSize}
+          onChange={(e) => setGridSize(Number(e.target.value))}
+        >
+          {[4, 8, 16, 32].map((n) => (
+            <option key={n} value={n}>
+              {n}px
+            </option>
+          ))}
+        </select>{' '}
+        <label>
+          <input type="checkbox" checked={rulerOn} onChange={(e) => setRulerOn(e.target.checked)} />{' '}
+          {t.ruler}
+        </label>{' '}
         <small>{t.hint}</small>
       </div>
       <div
@@ -407,7 +453,10 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
           marquee={marqueeRect ?? undefined}
           handles={handleInfo}
           drop={drop}
+          guides={guides}
+          grid={gridOn ? gridSize : 0}
         />
+        {rulerOn && <Ruler viewport={vp} />}
       </div>
     </section>
   )

@@ -40,3 +40,7 @@ export {
   setRotation,
 } from './canvas/transform'
 export type { HandleId, Line } from './canvas/transform'
+export { snapRect } from './canvas/snap'
+export type { SnapOptions, SnapResult } from './canvas/snap'
+export { rulerTicks, niceStep } from './canvas/rulerTicks'
+export { measureAllRects } from './canvas/hit'

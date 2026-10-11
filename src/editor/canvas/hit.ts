@@ -54,3 +54,27 @@ export function measureBoxExtra(
     h: f('padding-top') + f('padding-bottom') + f('border-top-width') + f('border-bottom-width'),
   }
 }
+
+// デバイス内の全ノード(exclude を除く、表示中のもの)の矩形をワールド座標で返す(スナップ対象の収集用)
+export function measureAllRects(
+  container: HTMLElement,
+  vp: Viewport,
+  deviceId: Id,
+  exclude: ReadonlySet<Id>,
+): WorldRect[] {
+  const c = container.getBoundingClientRect()
+  const out: WorldRect[] = []
+  container
+    .querySelectorAll<HTMLElement>(`[data-device-id="${cssStr(deviceId)}"] [data-node-id]`)
+    .forEach((el) => {
+      const id = el.dataset.nodeId
+      if (!id || exclude.has(id) || el.getClientRects().length === 0) return
+      const r = el.getBoundingClientRect()
+      const p = screenToWorld(vp, {
+        x: r.left - c.left - container.clientLeft,
+        y: r.top - c.top - container.clientTop,
+      })
+      out.push({ x: p.x, y: p.y, width: r.width / vp.zoom, height: r.height / vp.zoom })
+    })
+  return out
+}

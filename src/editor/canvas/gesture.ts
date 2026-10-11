@@ -1,4 +1,5 @@
 import {
+  getDescendantIds,
   getParentId,
   resolveNode,
   type History,
@@ -8,7 +9,9 @@ import {
   type UIDocument,
 } from '@/core'
 import { createPropsCommand, createReorderCommand, isBaseDevice, type PropWrite } from './commands'
-import { measureBoxExtra, measureWorldRect } from './hit'
+import { layoutArtboards, unionRect } from './artboard'
+import { measureAllRects, measureBoxExtra, measureWorldRect } from './hit'
+import { snapRect } from './snap'
 import {
   angleDeg,
   flexAxis,
@@ -33,8 +36,15 @@ export type GestureCtx = {
   el: HTMLElement
   vp: Viewport
 }
-export type GestureInput = { world: Point; px: Point; shift: boolean; alt: boolean }
-export type GestureFeedback = { drop?: Line | undefined }
+export type GestureInput = {
+  world: Point
+  px: Point
+  shift: boolean
+  alt: boolean
+  snap: boolean // false(Ctrl 押下中など)ならスナップしない
+  grid: number // 0 でグリッド吸着なし
+}
+export type GestureFeedback = { drop?: Line | undefined; guides?: Line[] | undefined }
 
 type MoveItem = {
   id: Id
@@ -46,7 +56,13 @@ type MoveItem = {
 type GBase = { deviceId: Id; startWorld: Point; startPx: Point; key: string; started: boolean }
 export type Gesture = GBase &
   (
-    | { kind: 'move'; items: MoveItem[] }
+    | {
+        kind: 'move'
+        items: MoveItem[]
+        rect: WorldRect | undefined
+        targets: WorldRect[]
+        art: WorldRect | undefined
+      }
     | {
         kind: 'reorder'
         id: Id
@@ -62,6 +78,8 @@ export type Gesture = GBase &
         rect: WorldRect
         extra: { w: number; h: number }
         abs: MoveItem | undefined
+        targets: WorldRect[]
+        art: WorldRect | undefined
       }
     | {
         kind: 'rotate'
@@ -74,6 +92,7 @@ export type Gesture = GBase &
   )
 
 const THRESHOLD = 3
+const SNAP_PX = 6 // スナップのしきい値(画面 px)
 let seq = 0
 const base = (deviceId: Id, startWorld: Point, startPx: Point): GBase => ({
   deviceId,
@@ -131,6 +150,21 @@ function positionWrites(it: MoveItem, left?: number, top?: number): PropWrite[] 
   return out
 }
 
+// スナップ対象(同じデバイスの他ノード+アートボード枠)。ジェスチャ開始時に 1 回だけ測る
+function snapContext(ctx: GestureCtx, deviceId: Id, moving: Id[]) {
+  const ex = new Set<Id>()
+  for (const id of moving) {
+    ex.add(id)
+    for (const d of getDescendantIds(ctx.page, id)) ex.add(d)
+  }
+  const art = layoutArtboards(ctx.doc.devices).find((a) => a.deviceId === deviceId)?.rect
+  const targets = measureAllRects(ctx.el, ctx.vp, deviceId, ex)
+  if (art) targets.push(art)
+  return { targets, art }
+}
+const originOf = (a: WorldRect | undefined): Point | undefined =>
+  a ? { x: a.x, y: a.y } : undefined
+
 export function startMove(
   ctx: GestureCtx,
   deviceId: Id,
@@ -163,9 +197,21 @@ export function startMove(
     }
     if (kind === 'absolute' || kind === 'offset') items.push(moveItem(ctx, deviceId, node, kind))
   }
-  return items.length > 0
-    ? { ...base(deviceId, startWorld, startPx), kind: 'move', items }
-    : undefined
+  if (items.length === 0) return undefined
+  const movingIds = items.map((i) => i.id)
+  const rect = unionRect(
+    movingIds.flatMap((id) => {
+      const r = measureWorldRect(ctx.el, ctx.vp, deviceId, id)
+      return r ? [r] : []
+    }),
+  )
+  return {
+    ...base(deviceId, startWorld, startPx),
+    kind: 'move',
+    items,
+    rect,
+    ...snapContext(ctx, deviceId, movingIds),
+  }
 }
 
 export function startResize(
@@ -190,6 +236,7 @@ export function startResize(
     rect,
     extra: measureBoxExtra(ctx.el, deviceId, id),
     abs: kind === 'absolute' ? moveItem(ctx, deviceId, node, 'absolute') : undefined,
+    ...snapContext(ctx, deviceId, [id]),
   }
 }
 
@@ -237,11 +284,24 @@ export function updateGesture(ctx: GestureCtx, g: Gesture, inp: GestureInput): G
     )
   switch (g.kind) {
     case 'move': {
+      let mx = dx
+      let my = dy
+      let guides: Line[] | undefined
+      if (inp.snap && g.rect) {
+        const res = snapRect({ ...g.rect, x: g.rect.x + dx, y: g.rect.y + dy }, g.targets, {
+          threshold: SNAP_PX / ctx.vp.zoom,
+          grid: inp.grid,
+          origin: originOf(g.art),
+        })
+        mx += res.dx
+        my += res.dy
+        guides = res.lines
+      }
       run(
         'move',
-        g.items.flatMap((it) => positionWrites(it, it.left + dx, it.top + dy)),
+        g.items.flatMap((it) => positionWrites(it, it.left + mx, it.top + my)),
       )
-      return {}
+      return { guides }
     }
     case 'reorder': {
       const t = reorderTarget(g.others, inp.world, g.axis)
@@ -249,13 +309,30 @@ export function updateGesture(ctx: GestureCtx, g: Gesture, inp: GestureInput): G
       return { drop: t.line }
     }
     case 'resize': {
+      const [sx, sy] = handleSigns(g.handle)
+      let ddx = dx
+      let ddy = dy
+      let guides: Line[] | undefined
+      // 動かしている辺だけを吸着(比率固定中は吸着しない)
+      if (inp.snap && !inp.shift) {
+        const cur = resizeRect(g.rect, g.handle, { x: dx, y: dy }, { fromCenter: inp.alt })
+        const res = snapRect(cur, g.targets, {
+          threshold: SNAP_PX / ctx.vp.zoom,
+          grid: inp.grid,
+          origin: originOf(g.art),
+          gaps: false,
+          lines: { x: sx > 0 ? [1] : sx < 0 ? [0] : [], y: sy > 0 ? [1] : sy < 0 ? [0] : [] },
+        })
+        ddx += res.dx
+        ddy += res.dy
+        guides = res.lines
+      }
       const r = resizeRect(
         g.rect,
         g.handle,
-        { x: dx, y: dy },
+        { x: ddx, y: ddy },
         { keepRatio: inp.shift, fromCenter: inp.alt },
       )
-      const [sx, sy] = handleSigns(g.handle)
       const writes: PropWrite[] = []
       if (sx !== 0 || inp.shift) {
         const value = px(Math.max(0, r.width - g.extra.w))
@@ -277,7 +354,7 @@ export function updateGesture(ctx: GestureCtx, g: Gesture, inp: GestureInput): G
         )
       }
       run('resize', writes)
-      return {}
+      return { guides }
     }
     case 'rotate': {
       let rot = g.startRot + (angleDeg(g.center, inp.world) - g.startAngle)

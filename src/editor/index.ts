@@ -53,3 +53,22 @@ export {
   createZOrderCommand,
 } from './canvas/structure'
 export type { WithCreated } from './canvas/structure'
+export { LayerPanel } from './canvas/LayerPanel'
+export { Palette } from './canvas/PalettePanel'
+export { resolveShortcut } from './canvas/shortcuts'
+export type { EditAction, KeyInput } from './canvas/shortcuts'
+export { runEditAction, dropCategory } from './canvas/actions'
+export { buildRows, resolveDrop, dropPosition } from './canvas/layers'
+export type { DropPos, LayerRow } from './canvas/layers'
+export {
+  createNodeForCategory,
+  planPaletteDrop,
+  dropParent,
+  canContain,
+  PALETTE_MIME,
+} from './canvas/palette'
+export {
+  createAddNodeCommand,
+  createMoveToCommand,
+  createNodeMetaCommand,
+} from './canvas/nodeCommands'

@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useStore } from 'zustand'
 import { docStore, history } from '@/appSession'
-import { Canvas, NodesPreview } from '@/editor'
+import { Canvas, LayerPanel, NodesPreview, Palette } from '@/editor'
 import { ImportDialog } from '@/io'
 import { RunningCommandsPanel } from '@/RunningCommandsPanel'
 import { applySettingsToElement, SettingsPanel, useSettings } from '@/settings'
@@ -56,7 +56,15 @@ export default function App() {
           renderAfter={(nodes, w, h) => <NodesPreview nodes={nodes} width={w} height={h} />}
         />
       )}
-      <Canvas doc={doc} history={history} language={language} />
+      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+        <aside style={{ width: 240, flexShrink: 0, textAlign: 'left' }}>
+          <Palette language={language} />
+          <LayerPanel doc={doc} history={history} language={language} />
+        </aside>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Canvas doc={doc} history={history} language={language} />
+        </div>
+      </div>
       <SettingsPanel />
       {showRunningCommands && (
         <RunningCommandsPanel title={language === 'ja' ? '実行ログ' : 'Running commands'} />

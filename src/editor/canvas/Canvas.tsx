@@ -14,7 +14,10 @@ import {
   type Gesture,
   type GestureCtx,
 } from './gesture'
+import { dropCategory, runEditAction } from './actions'
+import { PALETTE_MIME } from './palette'
 import { selectionStore, useSelection } from './selection'
+import { resolveShortcut } from './shortcuts'
 import { getRotation, isHandleId, type Line } from './transform'
 import { artboardForMarquee, marqueeTargets, normalizeRect, resolveTarget } from './target'
 import {
@@ -307,6 +310,33 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
     sel.pickMany(marqueeTargets(page, rects, rect), ab.deviceId, m.shift)
   }
 
+  // パレットからのドロップ: ドロップ位置のコンテナに追加
+  const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.dataTransfer.types.includes(PALETTE_MIME)) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }
+  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    const category = e.dataTransfer.getData(PALETTE_MIME)
+    const el = ref.current
+    if (!category || !page || !el) return
+    e.preventDefault()
+    const dev =
+      e.target instanceof Element ? e.target.closest<HTMLElement>('[data-device-id]') : null
+    const deviceId = dev?.dataset.deviceId
+    if (!deviceId) return
+    dropCategory(
+      { doc, page, history },
+      {
+        deviceId,
+        hitId: hitFromElement(e.target)?.nodeId,
+        category,
+        world: toWorld(e),
+        rectOf: (id) => measureWorldRect(el, vp, deviceId, id),
+      },
+    )
+  }
+
   // ダブルクリック: 選択中ノードの 1 つ下へ潜る
   const onDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const hit = hitFromElement(e.target)
@@ -346,6 +376,12 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
         ref={ref}
         tabIndex={0}
         onKeyDown={(e) => {
+          const act = resolveShortcut(e)
+          if (act && page) {
+            e.preventDefault()
+            runEditAction(act, { doc, page, history })
+            return
+          }
           if (e.key === 'Escape') selectionStore.getState().clear()
           if (e.code === 'Space') {
             e.preventDefault()
@@ -362,6 +398,8 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
         onPointerCancel={(e) => endPointer(e, false)}
         onPointerLeave={() => selectionStore.getState().setHover(null)}
         onDoubleClick={onDoubleClick}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
         style={{
           position: 'relative',
           overflow: 'hidden',

@@ -11,6 +11,7 @@ import { createDefaultImporters } from './defaults'
 import type { FetchFn } from './input'
 import { filesFromInputs, resolveResources, type AssetData } from './resources'
 import { detectImporters, runImport } from './select'
+import { arrangeResult } from './arrange'
 
 const DEFAULT_WIDTH = 1280
 
@@ -22,6 +23,7 @@ export type PrepareOptions = {
   allowNetwork?: boolean
   fetchFn?: FetchFn
   importers?: (ctx: { width: number }) => Importer[] // テスト/差し替え用
+  arrange?: boolean // 自動分類・レイアウト推定(既定 true)
   signal?: AbortSignal
 }
 
@@ -120,7 +122,13 @@ export async function prepareImport(
   ]
   return {
     importerId: run.importerId,
-    result: { ...resolved.result, warnings },
+    result:
+      options.arrange === false
+        ? { ...resolved.result, warnings }
+        : await arrangeResult(
+            { ...resolved.result, warnings },
+            { deviceWidth: options.width ?? DEFAULT_WIDTH },
+          ),
     assetData: resolved.assetData,
     ignored,
   }

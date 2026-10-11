@@ -12,3 +12,16 @@ export { registerRule, ruleRegistry } from './rules'
 export type { ClassifyRule } from './rules'
 export { classifyNode, classifyNodes, createSetCategoryCommand } from './engine'
 export type { Classification, ClassifyOptions } from './engine'
+export { getClassifyHook, mergeClassification, setClassifyHook } from './hook'
+export type { AiClassification, ClassifyContext, ClassifyHook, MergedClassification } from './hook'
+export {
+  arrangeLayout,
+  estimateLayout,
+  fixOverflow,
+  layoutPropsOf,
+  rectOf,
+  revertLayout,
+} from './layout'
+export type { ArrangeLayoutResult, LayoutEstimate, Rect } from './layout'
+export { arrangeNodes } from './arrange'
+export type { ArrangeOptions, ArrangeResult } from './arrange'

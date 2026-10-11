@@ -1,5 +1,5 @@
 import type { Line } from './transform'
-import type { Point, WorldRect } from './viewport'
+import type { WorldRect } from './viewport'
 
 export type SnapOptions = {
   threshold: number // ワールド単位(画面 px / zoom)

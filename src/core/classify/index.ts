@@ -25,3 +25,11 @@ export {
 export type { ArrangeLayoutResult, LayoutEstimate, Rect } from './layout'
 export { arrangeNodes } from './arrange'
 export type { ArrangeOptions, ArrangeResult } from './arrange'
+export {
+  createMobileCommand,
+  createMobileCommandFor,
+  planMobile,
+  planMobileAsync,
+  setMobileAssistHook,
+} from './mobile'
+export type { MobileAssistHook, MobileOp, MobilePlanOptions } from './mobile'

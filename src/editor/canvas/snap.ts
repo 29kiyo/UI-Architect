@@ -3,8 +3,6 @@ import type { Point, WorldRect } from './viewport'
 
 export type SnapOptions = {
   threshold: number // ワールド単位(画面 px / zoom)
-  grid?: number | undefined // 0/未指定でグリッド吸着なし
-  origin?: Point | undefined // グリッドの原点(アートボードの左上)
   gaps?: boolean | undefined // 等間隔スナップ(既定 true)
   // 吸着対象にする自分側の線(0=左/上, 0.5=中心, 1=右/下)。リサイズでは動かす辺だけを渡す
   lines?: { x?: readonly number[] | undefined; y?: readonly number[] | undefined } | undefined
@@ -54,10 +52,6 @@ function axisSnap(
     const ml = mp + f * ms
     for (const t of targets) {
       for (const tf of FRACS) offer(pos(t, a) + tf * size(t, a) - ml, 0)
-    }
-    if (o.grid && o.grid > 0 && f !== 0.5) {
-      const org = o.origin?.[a] ?? 0
-      offer(Math.round((ml - org) / o.grid) * o.grid + org - ml, 2)
     }
   }
   if (o.gaps !== false) {

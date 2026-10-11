@@ -42,7 +42,6 @@ export type GestureInput = {
   shift: boolean
   alt: boolean
   snap: boolean // false(Ctrl 押下中など)ならスナップしない
-  grid: number // 0 でグリッド吸着なし
 }
 export type GestureFeedback = { drop?: Line | undefined; guides?: Line[] | undefined }
 
@@ -162,8 +161,6 @@ function snapContext(ctx: GestureCtx, deviceId: Id, moving: Id[]) {
   if (art) targets.push(art)
   return { targets, art }
 }
-const originOf = (a: WorldRect | undefined): Point | undefined =>
-  a ? { x: a.x, y: a.y } : undefined
 
 export function startMove(
   ctx: GestureCtx,
@@ -290,8 +287,6 @@ export function updateGesture(ctx: GestureCtx, g: Gesture, inp: GestureInput): G
       if (inp.snap && g.rect) {
         const res = snapRect({ ...g.rect, x: g.rect.x + dx, y: g.rect.y + dy }, g.targets, {
           threshold: SNAP_PX / ctx.vp.zoom,
-          grid: inp.grid,
-          origin: originOf(g.art),
         })
         mx += res.dx
         my += res.dy
@@ -318,8 +313,6 @@ export function updateGesture(ctx: GestureCtx, g: Gesture, inp: GestureInput): G
         const cur = resizeRect(g.rect, g.handle, { x: dx, y: dy }, { fromCenter: inp.alt })
         const res = snapRect(cur, g.targets, {
           threshold: SNAP_PX / ctx.vp.zoom,
-          grid: inp.grid,
-          origin: originOf(g.art),
           gaps: false,
           lines: { x: sx > 0 ? [1] : sx < 0 ? [0] : [], y: sy > 0 ? [1] : sy < 0 ? [0] : [] },
         })

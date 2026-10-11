@@ -13,7 +13,6 @@ type Props = {
   handles?: HandleInfo | undefined
   drop?: Line | undefined
   guides?: Line[] | undefined
-  grid?: number | undefined
 }
 
 // 選択枠・ホバー枠・矩形選択の重ねレイヤー(5-C 以降でハンドル/ガイドを追加)
@@ -26,7 +25,6 @@ export function CanvasOverlay({
   handles,
   drop,
   guides = [],
-  grid = 0,
 }: Props) {
   return (
     <svg
@@ -48,40 +46,6 @@ export function CanvasOverlay({
             vectorEffect="non-scaling-stroke"
           />
         ))}
-        {grid > 0 && grid * viewport.zoom >= 4 && (
-          <>
-            <defs>
-              {artboards.map((a) => (
-                <pattern
-                  key={a.deviceId}
-                  id={'ua-grid-' + a.deviceId}
-                  x={a.rect.x}
-                  y={a.rect.y}
-                  width={grid}
-                  height={grid}
-                  patternUnits="userSpaceOnUse"
-                >
-                  <path
-                    d={'M ' + grid + ' 0 H 0 V ' + grid}
-                    fill="none"
-                    stroke="rgba(100,100,255,0.35)"
-                    strokeWidth={1 / viewport.zoom}
-                  />
-                </pattern>
-              ))}
-            </defs>
-            {artboards.map((a) => (
-              <rect
-                key={a.deviceId}
-                x={a.rect.x}
-                y={a.rect.y}
-                width={a.rect.width}
-                height={a.rect.height}
-                fill={'url(#ua-grid-' + a.deviceId + ')'}
-              />
-            ))}
-          </>
-        )}
         {hover && (
           <rect
             x={hover.x}

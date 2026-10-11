@@ -38,14 +38,6 @@ describe('snapRect', () => {
     expect(snapRect({ x: 103, y: 0, width: 10, height: 10 }, ts, o).dx).toBeCloseTo(1)
   })
 
-  it('グリッド(原点つき)に吸着する', () => {
-    const m = { x: 13, y: 27, width: 50, height: 50 }
-    const a = snapRect(m, [], { ...o, grid: 10 })
-    expect(a.dx).toBeCloseTo(-3)
-    expect(a.dy).toBeCloseTo(3)
-    expect(snapRect(m, [], { ...o, grid: 10, origin: { x: 5, y: 0 } }).dx).toBeCloseTo(2)
-  })
-
   it('等間隔: 同じ間隔になる位置に吸着し、区間のガイドが出る', () => {
     const ts = [
       { x: 0, y: 0, width: 50, height: 50 },

@@ -44,8 +44,6 @@ const TEXT = {
     zoomOut: '縮小',
     hint: 'Ctrl+ホイール: ズーム / Space+ドラッグ: パン / ドラッグ中 Ctrl: スナップ解除',
     snap: 'スナップ',
-    grid: 'グリッド',
-    gridSize: 'グリッド間隔',
     ruler: '定規',
   },
   en: {
@@ -55,8 +53,6 @@ const TEXT = {
     zoomOut: 'Zoom out',
     hint: 'Ctrl+wheel: zoom / Space+drag: pan / hold Ctrl while dragging: no snap',
     snap: 'Snap',
-    grid: 'Grid',
-    gridSize: 'Grid size',
     ruler: 'Rulers',
   },
 } as const
@@ -80,8 +76,6 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
   const [drop, setDrop] = useState<Line | undefined>(undefined)
   const [guides, setGuides] = useState<Line[]>([])
   const [snapOn, setSnapOn] = useState(true)
-  const [gridOn, setGridOn] = useState(false)
-  const [gridSize, setGridSize] = useState(8)
   const [rulerOn, setRulerOn] = useState(true)
   const [boxes, setBoxes] = useState<{ selected: WorldRect[]; hover?: WorldRect | undefined }>({
     selected: [],
@@ -253,7 +247,6 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
           shift: e.shiftKey,
           alt: e.altKey,
           snap: snapOn && !e.ctrlKey && !e.metaKey,
-          grid: gridOn ? gridSize : 0,
         }
         const fb = updateGesture(c, g, input)
         // ダブルクリックの対象を壊さないよう、実際にドラッグが始まってからキャプチャする
@@ -343,21 +336,6 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
           <input type="checkbox" checked={snapOn} onChange={(e) => setSnapOn(e.target.checked)} />{' '}
           {t.snap}
         </label>{' '}
-        <label>
-          <input type="checkbox" checked={gridOn} onChange={(e) => setGridOn(e.target.checked)} />{' '}
-          {t.grid}
-        </label>{' '}
-        <select
-          value={gridSize}
-          aria-label={t.gridSize}
-          onChange={(e) => setGridSize(Number(e.target.value))}
-        >
-          {[4, 8, 16, 32].map((n) => (
-            <option key={n} value={n}>
-              {n}px
-            </option>
-          ))}
-        </select>{' '}
         <label>
           <input type="checkbox" checked={rulerOn} onChange={(e) => setRulerOn(e.target.checked)} />{' '}
           {t.ruler}
@@ -454,7 +432,6 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
           handles={handleInfo}
           drop={drop}
           guides={guides}
-          grid={gridOn ? gridSize : 0}
         />
         {rulerOn && <Ruler viewport={vp} />}
       </div>

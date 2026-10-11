@@ -44,3 +44,12 @@ export { snapRect } from './canvas/snap'
 export type { SnapOptions, SnapResult } from './canvas/snap'
 export { rulerTicks, niceStep } from './canvas/rulerTicks'
 export { measureAllRects } from './canvas/hit'
+export {
+  createDuplicateCommand,
+  createPasteCommand,
+  createDeleteCommand,
+  createGroupCommand,
+  createUngroupCommand,
+  createZOrderCommand,
+} from './canvas/structure'
+export type { WithCreated } from './canvas/structure'

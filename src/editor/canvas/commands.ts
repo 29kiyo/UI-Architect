@@ -17,7 +17,7 @@ export type PropWrite = { nodeId: Id; group: keyof Props; key: string; value: st
 export const isBaseDevice = (devices: { id: Id }[], deviceId: Id): boolean =>
   devices[0]?.id === deviceId
 
-function findPage(pages: Page[], pageId: Id): Page {
+export function findPage(pages: Page[], pageId: Id): Page {
   const page = pages.find((p) => p.id === pageId)
   if (!page) throw new Error(`page not found: ${pageId}`)
   return page

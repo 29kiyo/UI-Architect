@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import type { Device, History, ImportInput } from '@/core'
+import { deviceSize, type Device, type History, type ImportInput } from '@/core'
 import { BeforeAfter, type RenderAfter } from './BeforeAfter'
 import { fromFiles, fromText, fromUrl } from './input'
 import { analyzeInputs, commitPrepared, outlineOf, prepareImport, type Prepared } from './prepare'
@@ -91,7 +91,8 @@ export function ImportDialog({ onClose, history, devices, language, renderAfter 
   const [preview, setPreview] = useState<PreviewState | null>(null)
   const abort = useRef<AbortController | null>(null)
 
-  const width = devices.find((d) => d.id === deviceId)?.width
+  const target = devices.find((d) => d.id === deviceId)
+  const width = target ? deviceSize(target).width : undefined
   const analysis = useMemo(
     () => analyzeInputs(inputs, width !== undefined ? { width } : {}),
     [inputs, width],

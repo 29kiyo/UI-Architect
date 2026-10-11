@@ -13,6 +13,7 @@ type Props = {
   handles?: HandleInfo | undefined
   drop?: Line | undefined
   guides?: Line[] | undefined
+  safe?: WorldRect[] | undefined
 }
 
 // 選択枠・ホバー枠・矩形選択の重ねレイヤー(5-C 以降でハンドル/ガイドを追加)
@@ -25,6 +26,7 @@ export function CanvasOverlay({
   handles,
   drop,
   guides = [],
+  safe = [],
 }: Props) {
   return (
     <svg
@@ -44,6 +46,16 @@ export function CanvasOverlay({
             fill="none"
             stroke="var(--border)"
             vectorEffect="non-scaling-stroke"
+          />
+        ))}
+        {safe.map((r, i) => (
+          <rect
+            key={'safe-' + i}
+            x={r.x}
+            y={r.y}
+            width={r.width}
+            height={r.height}
+            fill="rgba(255,140,0,0.22)"
           />
         ))}
         {hover && (

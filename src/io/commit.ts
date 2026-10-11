@@ -2,6 +2,7 @@ import {
   AssetSchema,
   NodeSchema,
   planMobile,
+  deviceSize,
   setOverrideProp,
   type Command,
   type ImportResult,
@@ -106,7 +107,7 @@ export function createImportCommand(result: ImportResult, options: CommitOptions
         const dev = draft.devices.find((d) => d.id === options.mobileDeviceId)
         if (!dev) throw new Error(`デバイスが見つかりません: ${options.mobileDeviceId}`)
         const ids = new Set(nodes.map((n) => n.id))
-        const ops = planMobile(page, dev.id, { deviceWidth: dev.width })
+        const ops = planMobile(page, dev.id, { deviceWidth: deviceSize(dev).width })
         for (const op of ops) {
           if (ids.has(op.nodeId))
             setOverrideProp(page, dev.id, op.nodeId, op.group, op.key, op.value)

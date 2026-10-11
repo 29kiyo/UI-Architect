@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { resolveNode, type History, type UIDocument } from '@/core'
-import { layoutArtboards, unionRect } from './artboard'
+import { frameFor, layoutArtboards, safeBands, unionRect } from './artboard'
 import { AlignBar } from './AlignBar'
+import { DeviceBar } from './DeviceBar'
 import { CanvasOverlay } from './CanvasOverlay'
 import { Ruler } from './Ruler'
 import { NodeView } from './NodeView'
@@ -81,12 +82,34 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
   const [guides, setGuides] = useState<Line[]>([])
   const [snapOn, setSnapOn] = useState(true)
   const [rulerOn, setRulerOn] = useState(true)
+  const [view, setView] = useState('all') // 'all' か表示するデバイス ID
+  const [frameOn, setFrameOn] = useState(true)
+  const [safeOn, setSafeOn] = useState(true)
   const [boxes, setBoxes] = useState<{ selected: WorldRect[]; hover?: WorldRect | undefined }>({
     selected: [],
   })
 
   const page = doc.pages.find((p) => p.id === pageId) ?? doc.pages[0]
-  const artboards = useMemo(() => layoutArtboards(doc.devices), [doc.devices])
+  // 座標は全デバイスで計算し、描画だけ絞る(スナップ等の座標計算と一致させる)
+  const allArtboards = useMemo(() => layoutArtboards(doc.devices), [doc.devices])
+  const artboards = useMemo(
+    () => (view === 'all' ? allArtboards : allArtboards.filter((a) => a.deviceId === view)),
+    [allArtboards, view],
+  )
+  const safe = useMemo(
+    () =>
+      safeOn
+        ? artboards.flatMap((a) => {
+            const d = doc.devices.find((x) => x.id === a.deviceId)
+            return d ? safeBands(a.rect, d.safeArea) : []
+          })
+        : [],
+    [artboards, doc.devices, safeOn],
+  )
+  const frameOf = (deviceId: string) => {
+    const kind = doc.devices.find((d) => d.id === deviceId)?.kind
+    return frameOn && kind ? frameFor(kind) : { pad: 0, radius: 0 }
+  }
 
   // Undo 等で消えたノードを選択から外す
   useEffect(() => {
@@ -138,6 +161,11 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
   useEffect(() => {
     if (!fitted.current) fitted.current = fit()
   }, [fit])
+
+  // 表示デバイスや回転で範囲が変わったら収め直す
+  useEffect(() => {
+    fit()
+  }, [view, fit])
 
   // ホイール: Ctrl/⌘ でカーソル中心ズーム、それ以外はパン(preventDefault のため非 passive)
   useEffect(() => {
@@ -373,6 +401,17 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
         </label>{' '}
         <small>{t.hint}</small>
       </div>
+      <DeviceBar
+        doc={doc}
+        history={history}
+        view={view}
+        setView={setView}
+        frame={frameOn}
+        setFrame={setFrameOn}
+        safeOn={safeOn}
+        setSafeOn={setSafeOn}
+        language={language}
+      />
       <AlignBar
         doc={doc}
         page={page}
@@ -447,13 +486,25 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
                     position: 'absolute',
                     bottom: '100%',
                     left: 0,
-                    paddingBottom: 4,
+                    paddingBottom: 4 + frameOf(a.deviceId).pad,
                     fontSize: 12 / vp.zoom,
                     whiteSpace: 'nowrap',
                   }}
                 >
                   {a.name} ({a.rect.width}×{a.rect.height})
                 </div>
+                {frameOf(a.deviceId).pad > 0 && (
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      inset: -frameOf(a.deviceId).pad,
+                      borderRadius: frameOf(a.deviceId).radius + frameOf(a.deviceId).pad,
+                      background: '#1c1c1e',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
                 <div
                   style={{
                     position: 'relative',
@@ -461,6 +512,7 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
                     height: '100%',
                     overflow: 'hidden',
                     background: '#fff',
+                    borderRadius: frameOf(a.deviceId).radius,
                     color: '#000',
                     boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
                   }}
@@ -479,6 +531,7 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
           handles={handleInfo}
           drop={drop}
           guides={guides}
+          safe={safe}
         />
         {rulerOn && <Ruler viewport={vp} />}
       </div>

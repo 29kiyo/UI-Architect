@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useStore } from 'zustand'
 import { docStore, history } from '@/appSession'
-import { Canvas, LayerPanel, NodesPreview, Palette } from '@/editor'
+import { BenchButton, Canvas, LayerPanel, NodesPreview, Palette } from '@/editor'
 import { ImportDialog } from '@/io'
 import { RunningCommandsPanel } from '@/RunningCommandsPanel'
 import { applySettingsToElement, SettingsPanel, useSettings } from '@/settings'
@@ -43,6 +43,13 @@ export default function App() {
         <button type="button" disabled={!hist.canRedo} onClick={() => history.redo()}>
           Redo
         </button>{' '}
+        {import.meta.env.DEV && (
+          <BenchButton
+            doc={doc}
+            history={history}
+            replace={(d) => docStore.getState().replace(d)}
+          />
+        )}{' '}
         <span>
           {Object.keys(doc.pages[0]?.nodes ?? {}).length} {ja ? 'ノード' : 'nodes'}
         </span>

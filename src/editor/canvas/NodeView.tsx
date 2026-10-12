@@ -1,20 +1,69 @@
-import { memo } from 'react'
-import { resolveNode } from '@/core'
-import type { Page } from '@/core'
+import {
+  createContext,
+  memo,
+  useContext,
+  useLayoutEffect,
+  useState,
+  useSyncExternalStore,
+} from 'react'
+import { orderChildren, resolveProps } from '@/core'
+import type { Node, Page } from '@/core'
 import { nodeStyle } from './style'
-
-type Props = { page: Page; deviceId: string; nodeId: string; depth?: number }
 
 const MAX_DEPTH = 200
 const PLACEHOLDER = '#e5e5e5'
 // SVG は <img> 経由で描画する(キャンバス内でスクリプトを実行させない)
 const svgDataUrl = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 
-// デバイス別の実効値で1ノードを DOM 描画する(子は再帰)
-export const NodeView = memo(function NodeView({ page, deviceId, nodeId, depth = 0 }: Props) {
-  if (depth > MAX_DEPTH) return null
-  const n = resolveNode(page, deviceId, nodeId)
-  if (!n) return null
+// ページを保持する小さなストア。各ノードが自分の node / override だけを購読する
+type PageStore = {
+  get: () => Page
+  set: (p: Page) => void
+  subscribe: (l: () => void) => () => void
+}
+function createPageStore(initial: Page): PageStore {
+  let page = initial
+  const ls = new Set<() => void>()
+  return {
+    get: () => page,
+    set: (p) => {
+      if (p === page) return
+      page = p
+      ls.forEach((l) => l())
+    },
+    subscribe: (l) => {
+      ls.add(l)
+      return () => {
+        ls.delete(l)
+      }
+    },
+  }
+}
+const StoreCtx = createContext<PageStore | undefined>(undefined)
+
+type Props = { nodeId: string; deviceId: string; depth: number }
+
+// props は ID のみ。自分の node / override が変わったときだけ再描画される
+const NodeViewInner = memo(function NodeViewInner({ nodeId, deviceId, depth }: Props) {
+  const store = useContext(StoreCtx)
+  const node = useSyncExternalStore(
+    store?.subscribe ?? noopSubscribe,
+    () => store?.get().nodes[nodeId],
+  )
+  const override = useSyncExternalStore(
+    store?.subscribe ?? noopSubscribe,
+    () => store?.get().overrides[deviceId]?.[nodeId],
+  )
+  if (!node || depth > MAX_DEPTH) return null
+  // override が無ければ共有ノードをそのまま使う
+  const n: Node = override
+    ? {
+        ...node,
+        props: resolveProps(node.props, override),
+        hidden: override.hidden ?? node.hidden,
+        children: orderChildren(node.children, override.order),
+      }
+    : node
   const style = nodeStyle(n)
   const c = n.props.content
 
@@ -50,8 +99,25 @@ export const NodeView = memo(function NodeView({ page, deviceId, nodeId, depth =
     <div data-node-id={n.id} style={style}>
       {typeof c.text === 'string' ? c.text : null}
       {n.children.map((id) => (
-        <NodeView key={id} page={page} deviceId={deviceId} nodeId={id} depth={depth + 1} />
+        <NodeViewInner key={id} nodeId={id} deviceId={deviceId} depth={depth + 1} />
       ))}
     </div>
   )
 })
+
+const noopSubscribe = () => () => {}
+
+type RootProps = { page: Page; deviceId: string; nodeId: string }
+
+// 入口。page をストアへ流し込み、ルートから描画する
+export function NodeView({ page, deviceId, nodeId }: RootProps) {
+  const [store] = useState(() => createPageStore(page))
+  useLayoutEffect(() => {
+    store.set(page)
+  }, [store, page])
+  return (
+    <StoreCtx.Provider value={store}>
+      <NodeViewInner nodeId={nodeId} deviceId={deviceId} depth={0} />
+    </StoreCtx.Provider>
+  )
+}

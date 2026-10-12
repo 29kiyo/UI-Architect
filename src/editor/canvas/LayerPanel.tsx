@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { memo, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import type { History, Id, UIDocument } from '@/core'
 import { isBaseDevice } from './commands'
 import { buildRows, dropPosition, resolveDrop, type DropPos } from './layers'
@@ -47,6 +47,7 @@ export function LayerPanel({ doc, history, pageId, language }: Props) {
   const [drag, setDrag] = useState<Id | null>(null)
   const [over, setOver] = useState<{ id: Id; pos: DropPos } | null>(null)
   const skipCommit = useRef(false)
+  const hRef = useRef<RowHandlers | null>(null)
 
   const rows = useMemo(
     () => (page && deviceId ? buildRows(page, deviceId, collapsed, query) : []),
@@ -112,18 +113,27 @@ export function LayerPanel({ doc, history, pageId, language }: Props) {
     )
   }
 
-  const shadow = (pos: DropPos | undefined) =>
-    pos === 'before'
-      ? 'inset 0 2px 0 var(--accent)'
-      : pos === 'after'
-        ? 'inset 0 -2px 0 var(--accent)'
-        : pos === 'inside'
-          ? 'inset 0 0 0 2px var(--accent)'
-          : 'none'
-  const small = { border: 'none', background: 'transparent', cursor: 'pointer', padding: '0 2px' }
-
   return (
     <section aria-label={t.title} style={{ textAlign: 'left', fontSize: 13, marginTop: 8 }}>
+      <Sync
+        handlersRef={hRef}
+        value={{
+          select: (id, additive) => selectionStore.getState().pick(id, deviceId, additive),
+          startEdit,
+          setDraft,
+          commitEdit,
+          cancelEdit: () => {
+            skipCommit.current = true
+            setEditing(null)
+          },
+          dragStart: setDrag,
+          dragOver: handleOver,
+          drop: handleDrop,
+          dragEnd: endDrag,
+          fold: toggleFold,
+          meta,
+        }}
+      />
       <strong>{t.title}</strong>
       <input
         type="search"
@@ -138,110 +148,205 @@ export function LayerPanel({ doc, history, pageId, language }: Props) {
         style={{ maxHeight: '40vh', overflow: 'auto', border: '1px solid var(--border)' }}
       >
         {rows.length === 0 && <div style={{ padding: 4 }}>{t.empty}</div>}
-        {rows.map((row) => {
-          const shared = page.nodes[row.id]
-          const selected = selectedIds.includes(row.id)
-          return (
-            <div
-              key={row.id}
-              role="treeitem"
-              aria-selected={selected}
-              draggable={editing !== row.id}
-              onClick={(e) =>
-                selectionStore
-                  .getState()
-                  .pick(row.id, deviceId, e.shiftKey || e.ctrlKey || e.metaKey)
-              }
-              onDoubleClick={() => startEdit(row.id, row.node.name)}
-              onDragStart={(e) => {
-                e.dataTransfer.setData('text/plain', row.id)
-                e.dataTransfer.effectAllowed = 'move'
-                setDrag(row.id)
-              }}
-              onDragOver={(e) => handleOver(e, row.id)}
-              onDrop={(e) => handleDrop(e, row.id)}
-              onDragEnd={endDrag}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-                paddingLeft: 4 + row.depth * 14,
-                paddingRight: 4,
-                cursor: 'pointer',
-                background: selected ? 'var(--accent-bg)' : 'transparent',
-                opacity: shared?.hidden ? 0.5 : 1,
-                boxShadow: shadow(over?.id === row.id ? over.pos : undefined),
-              }}
-            >
-              <button
-                type="button"
-                aria-label={t.fold}
-                disabled={!row.hasChildren || query !== ''}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleFold(row.id)
-                }}
-                style={{ ...small, width: 16, visibility: row.hasChildren ? 'visible' : 'hidden' }}
-              >
-                {row.collapsed ? '▸' : '▾'}
-              </button>
-              {editing === row.id ? (
-                <input
-                  autoFocus
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onBlur={commitEdit}
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') commitEdit()
-                    if (e.key === 'Escape') {
-                      skipCommit.current = true
-                      setEditing(null)
-                    }
-                  }}
-                  style={{ flex: 1, minWidth: 0 }}
-                />
-              ) : (
-                <span
-                  style={{
-                    flex: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {row.node.name || row.node.type}
-                </span>
-              )}
-              <button
-                type="button"
-                aria-label={t.show}
-                title={t.show}
-                style={small}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  meta(row.id, { hidden: !shared?.hidden }, 'toggle-visibility')
-                }}
-              >
-                {shared?.hidden ? '🙈' : '👁'}
-              </button>
-              <button
-                type="button"
-                aria-label={t.lock}
-                title={t.lock}
-                style={small}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  meta(row.id, { locked: !shared?.locked }, 'toggle-lock')
-                }}
-              >
-                {shared?.locked ? '🔒' : '🔓'}
-              </button>
-            </div>
-          )
-        })}
+        {rows.map((row) => (
+          <LayerRowView
+            key={row.id}
+            id={row.id}
+            depth={row.depth}
+            name={row.node.name || row.node.type}
+            rawName={row.node.name}
+            hasChildren={row.hasChildren}
+            collapsed={row.collapsed}
+            hidden={page.nodes[row.id]?.hidden === true}
+            locked={page.nodes[row.id]?.locked === true}
+            selected={selectedIds.includes(row.id)}
+            editing={editing === row.id}
+            draft={editing === row.id ? draft : ''}
+            overPos={over?.id === row.id ? over.pos : undefined}
+            foldDisabled={query !== ''}
+            t={t}
+            hRef={hRef}
+          />
+        ))}
       </div>
       <small>{t.hint}</small>
     </section>
+  )
+}
+
+type RowHandlers = {
+  select: (id: Id, additive: boolean) => void
+  startEdit: (id: Id, name: string) => void
+  setDraft: (v: string) => void
+  commitEdit: () => void
+  cancelEdit: () => void
+  dragStart: (id: Id) => void
+  dragOver: (e: React.DragEvent<HTMLDivElement>, id: Id) => void
+  drop: (e: React.DragEvent<HTMLDivElement>, id: Id) => void
+  dragEnd: () => void
+  fold: (id: Id) => void
+  meta: (id: Id, patch: { hidden?: boolean; locked?: boolean }, label: string) => unknown
+}
+
+// 最新のハンドラを ref に反映する(レンダー中ではなくレイアウト効果で)
+function Sync({
+  handlersRef,
+  value,
+}: {
+  handlersRef: RefObject<RowHandlers | null>
+  value: RowHandlers
+}) {
+  useLayoutEffect(() => {
+    handlersRef.current = value
+  })
+  return null
+}
+
+const SMALL = { border: 'none', background: 'transparent', cursor: 'pointer', padding: '0 2px' }
+const rowShadow = (pos: DropPos | undefined) =>
+  pos === 'before'
+    ? 'inset 0 2px 0 var(--accent)'
+    : pos === 'after'
+      ? 'inset 0 -2px 0 var(--accent)'
+      : pos === 'inside'
+        ? 'inset 0 0 0 2px var(--accent)'
+        : 'none'
+
+type RowProps = {
+  id: Id
+  depth: number
+  name: string
+  rawName: string
+  hasChildren: boolean
+  collapsed: boolean
+  hidden: boolean
+  locked: boolean
+  selected: boolean
+  editing: boolean
+  draft: string
+  overPos: DropPos | undefined
+  foldDisabled: boolean
+  t: (typeof TEXT)['ja'] | (typeof TEXT)['en']
+  hRef: RefObject<RowHandlers | null>
+}
+
+// props は値のみ。構造・選択・編集が変わった行だけ再描画される
+const LayerRowView = memo(function LayerRowView(p: RowProps) {
+  const h = () => p.hRef.current
+  return (
+    <div
+      role="treeitem"
+      aria-selected={p.selected}
+      draggable={!p.editing}
+      onClick={(e) => h()?.select(p.id, e.shiftKey || e.ctrlKey || e.metaKey)}
+      onDoubleClick={() => h()?.startEdit(p.id, p.rawName)}
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', p.id)
+        e.dataTransfer.effectAllowed = 'move'
+        h()?.dragStart(p.id)
+      }}
+      onDragOver={(e) => h()?.dragOver(e, p.id)}
+      onDrop={(e) => h()?.drop(e, p.id)}
+      onDragEnd={() => h()?.dragEnd()}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        paddingLeft: 4 + p.depth * 14,
+        paddingRight: 4,
+        cursor: 'pointer',
+        background: p.selected ? 'var(--accent-bg)' : 'transparent',
+        opacity: p.hidden ? 0.5 : 1,
+        boxShadow: rowShadow(p.overPos),
+      }}
+    >
+      <button
+        type="button"
+        aria-label={p.t.fold}
+        disabled={!p.hasChildren || p.foldDisabled}
+        onClick={(e) => {
+          e.stopPropagation()
+          h()?.fold(p.id)
+        }}
+        style={{ ...SMALL, width: 16, visibility: p.hasChildren ? 'visible' : 'hidden' }}
+      >
+        {p.collapsed ? '▸' : '▾'}
+      </button>
+      {p.editing ? (
+        <input
+          autoFocus
+          value={p.draft}
+          onChange={(e) => h()?.setDraft(e.target.value)}
+          onBlur={() => h()?.commitEdit()}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') h()?.commitEdit()
+            if (e.key === 'Escape') h()?.cancelEdit()
+          }}
+          style={{ flex: 1, minWidth: 0 }}
+        />
+      ) : (
+        <span
+          style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+        >
+          {p.name}
+        </span>
+      )}
+      <button
+        type="button"
+        aria-label={p.t.show}
+        title={p.t.show}
+        style={SMALL}
+        onClick={(e) => {
+          e.stopPropagation()
+          h()?.meta(p.id, { hidden: !p.hidden }, 'toggle-visibility')
+        }}
+      >
+        <EyeIcon off={p.hidden} />
+      </button>
+      <button
+        type="button"
+        aria-label={p.t.lock}
+        title={p.t.lock}
+        style={SMALL}
+        onClick={(e) => {
+          e.stopPropagation()
+          h()?.meta(p.id, { locked: !p.locked }, 'toggle-lock')
+        }}
+      >
+        <LockIcon locked={p.locked} />
+      </button>
+    </div>
+  )
+})
+
+const ICON = {
+  width: 14,
+  height: 14,
+  viewBox: '0 0 16 16',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.4,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': true,
+} as const
+
+function EyeIcon({ off }: { off: boolean }) {
+  return (
+    <svg {...ICON} opacity={off ? 0.55 : 1}>
+      <path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8s-2.4 4.5-6.5 4.5S1.5 8 1.5 8z" />
+      <circle cx="8" cy="8" r="2" />
+      {off && <path d="M2.5 13.5l11-11" />}
+    </svg>
+  )
+}
+
+function LockIcon({ locked }: { locked: boolean }) {
+  return (
+    <svg {...ICON} opacity={locked ? 1 : 0.55}>
+      <rect x="3.5" y="7.5" width="9" height="6" rx="1.2" />
+      <path d={locked ? 'M5.5 7.5V5.5a2.5 2.5 0 0 1 5 0v2' : 'M5.5 7.5V5.5a2.5 2.5 0 0 1 4.8-1'} />
+    </svg>
   )
 }

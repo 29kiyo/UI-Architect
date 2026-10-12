@@ -46,3 +46,35 @@ export function resolveShortcut(e: KeyInput): EditAction | undefined {
       return undefined
   }
 }
+
+export const SHORTCUT_KEYS: Record<EditAction, string> = {
+  undo: 'Ctrl+Z',
+  redo: 'Ctrl+Shift+Z',
+  duplicate: 'Ctrl+D',
+  delete: 'Delete',
+  group: 'Ctrl+G',
+  ungroup: 'Ctrl+Shift+G',
+  copy: 'Ctrl+C',
+  paste: 'Ctrl+V',
+  front: 'Ctrl+Shift+]',
+  back: 'Ctrl+Shift+[',
+  forward: 'Ctrl+]',
+  backward: 'Ctrl+[',
+}
+
+// 文字入力中・ダイアログ内ではショートカットを効かせない
+export function isShortcutBlocked(t: EventTarget | null): boolean {
+  if (typeof Element === 'undefined' || !(t instanceof Element)) return false
+  return (
+    t.closest(
+      'input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="dialog"]',
+    ) !== null
+  )
+}
+
+export const isPaletteKey = (
+  e: Pick<KeyInput, 'key' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey'>,
+) =>
+  (e.ctrlKey || e.metaKey) &&
+  !e.altKey &&
+  ((e.key.toLowerCase() === 'k' && !e.shiftKey) || (e.key.toLowerCase() === 'p' && e.shiftKey))

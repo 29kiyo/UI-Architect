@@ -2,6 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { resolveNode, type History, type UIDocument } from '@/core'
 import { frameFor, layoutArtboards, safeBands, unionRect } from './artboard'
 import { AlignBar } from './AlignBar'
+import { buildPaletteCommands, type PaletteCommand } from './commandList'
+import { CommandPalette } from './CommandPalette'
+import { useEditorShortcuts } from './useEditorShortcuts'
 import { DeviceBar } from './DeviceBar'
 import { CanvasOverlay } from './CanvasOverlay'
 import { Ruler } from './Ruler'
@@ -16,10 +19,9 @@ import {
   type Gesture,
   type GestureCtx,
 } from './gesture'
-import { dropCategory, runEditAction } from './actions'
+import { dropCategory } from './actions'
 import { PALETTE_MIME } from './palette'
 import { selectionStore, useSelection } from './selection'
-import { resolveShortcut } from './shortcuts'
 import { getRotation, isHandleId, type Line } from './transform'
 import { artboardForMarquee, marqueeTargets, normalizeRect, resolveTarget } from './target'
 import {
@@ -85,6 +87,8 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
   const [view, setView] = useState('all') // 'all' か表示するデバイス ID
   const [frameOn, setFrameOn] = useState(true)
   const [safeOn, setSafeOn] = useState(true)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [paletteCommands, setPaletteCommands] = useState<PaletteCommand[]>([])
   const [boxes, setBoxes] = useState<{ selected: WorldRect[]; hover?: WorldRect | undefined }>({
     selected: [],
   })
@@ -110,6 +114,26 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
     const kind = doc.devices.find((d) => d.id === deviceId)?.kind
     return frameOn && kind ? frameFor(kind) : { pad: 0, radius: 0 }
   }
+
+  // 一覧は「開いた時」にイベント内で作る(レンダー中に ref を読まない)
+  const openPalette = () => {
+    const h = history.getState()
+    const sel = selectionStore.getState()
+    setPaletteCommands(
+      buildPaletteCommands({
+        env: page ? { doc, page, history } : undefined,
+        el: ref.current,
+        vp,
+        language,
+        selectedIds: sel.selectedIds,
+        deviceId: sel.activeDeviceId ?? doc.devices[0]?.id,
+        canUndo: h.canUndo,
+        canRedo: h.canRedo,
+      }),
+    )
+    setPaletteOpen(true)
+  }
+  useEditorShortcuts(doc, page, history, openPalette)
 
   // Undo 等で消えたノードを選択から外す
   useEffect(() => {
@@ -401,6 +425,16 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
         </label>{' '}
         <small>{t.hint}</small>
       </div>
+      {paletteOpen && (
+        <CommandPalette
+          commands={paletteCommands}
+          language={language}
+          onClose={() => setPaletteOpen(false)}
+        />
+      )}
+      <button type="button" onClick={openPalette}>
+        {language === 'ja' ? 'コマンド (Ctrl+K)' : 'Commands (Ctrl+K)'}
+      </button>
       <DeviceBar
         doc={doc}
         history={history}
@@ -424,12 +458,6 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
         ref={ref}
         tabIndex={0}
         onKeyDown={(e) => {
-          const act = resolveShortcut(e)
-          if (act && page) {
-            e.preventDefault()
-            runEditAction(act, { doc, page, history })
-            return
-          }
           if (e.key === 'Escape') selectionStore.getState().clear()
           if (e.code === 'Space') {
             e.preventDefault()

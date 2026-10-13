@@ -88,3 +88,4 @@ export { isShortcutBlocked, isPaletteKey, SHORTCUT_KEYS } from './canvas/shortcu
 export { createPropRegistry, propRegistry, registerProp } from './inspector'
 export type { Label, PropDef, PropOption, PropRegistry, PropType, PropValue } from './inspector'
 export { BUILTIN_PROPS, registerBuiltinProps } from './inspector'
+export { Inspector, PropControl, normalizeInput } from './inspector'

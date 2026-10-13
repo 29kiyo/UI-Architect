@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useStore } from 'zustand'
 import { docStore, history } from '@/appSession'
-import { BenchButton, Canvas, LayerPanel, NodesPreview, Palette } from '@/editor'
+import { BenchButton, Canvas, Inspector, LayerPanel, NodesPreview, Palette } from '@/editor'
 import { ImportDialog } from '@/io'
 import { RunningCommandsPanel } from '@/RunningCommandsPanel'
 import { applySettingsToElement, SettingsPanel, useSettings } from '@/settings'
@@ -71,6 +71,9 @@ export default function App() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <Canvas doc={doc} history={history} language={language} />
         </div>
+        <aside style={{ width: 300, flexShrink: 0 }}>
+          <Inspector doc={doc} history={history} language={language} />
+        </aside>
       </div>
       <SettingsPanel />
       {showRunningCommands && (

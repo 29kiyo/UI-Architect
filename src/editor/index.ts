@@ -89,3 +89,14 @@ export { createPropRegistry, propRegistry, registerProp } from './inspector'
 export type { Label, PropDef, PropOption, PropRegistry, PropType, PropValue } from './inspector'
 export { BUILTIN_PROPS, registerBuiltinProps } from './inspector'
 export { Inspector, PropControl, normalizeInput } from './inspector'
+export { tokenStyle, tokenRef, tokenVarName, findTokenByRef, TOKEN_KINDS } from './canvas/tokenVars'
+export type { TokenKind } from './canvas/tokenVars'
+export {
+  createSetTokenCommand,
+  createRemoveTokenCommand,
+  createResetPropCommand,
+  createDetachCommand,
+  createAttachCommand,
+  overrideState,
+} from './inspector'
+export { TokenPanel, TokenPicker, tokenKindFor } from './inspector'

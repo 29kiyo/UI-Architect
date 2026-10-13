@@ -27,3 +27,14 @@ export type {
 export { normalizeInput } from './commit'
 export { Inspector } from './Inspector'
 export { PropControl } from './controls'
+export {
+  canResetProp,
+  createAttachCommand,
+  createDetachCommand,
+  createResetPropCommand,
+  isDetachedAt,
+  overrideState,
+} from './overrideCommands'
+export { createRemoveTokenCommand, createSetTokenCommand } from './tokenCommands'
+export { OverrideBar, PropLabel } from './overrideUi'
+export { TokenPanel, TokenPicker, tokenKindFor } from './tokenUi'

@@ -8,6 +8,15 @@ import {
 import { createPropsCommand, isBaseDevice } from '../canvas/commands'
 import { useSelection } from '../canvas/selection'
 import { PropControl } from './controls'
+import {
+  createAttachCommand,
+  createDetachCommand,
+  createResetPropCommand,
+  isDetachedAt,
+  overrideState,
+} from './overrideCommands'
+import { OverrideBar, PropLabel } from './overrideUi'
+import { TokenPicker } from './tokenUi'
 import { propRegistry, type PropDef } from './registry'
 
 type Props = {
@@ -90,6 +99,18 @@ export function Inspector({ doc, history, pageId, language }: Props) {
     )
   }
 
+  const target =
+    page && deviceId && node ? { pageId: page.id, deviceId, nodeId: node.id } : undefined
+  const detached = page && deviceId && node ? isDetachedAt(page, deviceId, node.id) : false
+  const reset = (g: keyof NodeProps, def: PropDef) => {
+    if (target) history.execute(createResetPropCommand(target, g, def.key))
+  }
+  // 印は「上書き中」のときだけ。デバイス別に持てない値は常に印なし
+  const labelState = (g: keyof NodeProps, def: PropDef) =>
+    page && deviceId && node && def.deviceOverridable
+      ? overrideState(page, deviceId, node.id, g, def.key)
+      : undefined
+
   return (
     <section aria-label={t.title} style={{ textAlign: 'left', fontSize: 12 }}>
       <h3 style={{ margin: '4px 0' }}>{t.title}</h3>
@@ -101,12 +122,22 @@ export function Inspector({ doc, history, pageId, language }: Props) {
           <div style={{ margin: '4px 0' }}>
             <strong>{node.name}</strong> ({t.category}: {node.category})
           </div>
+          {deviceId && (
+            <OverrideBar
+              deviceName={doc.devices.find((d) => d.id === deviceId)?.name ?? ''}
+              isBase={isBaseDevice(doc.devices, deviceId)}
+              detached={detached}
+              language={language}
+              onDetach={() => target && history.execute(createDetachCommand(target))}
+              onAttach={() => target && history.execute(createAttachCommand(target))}
+            />
+          )}
           <div style={{ maxHeight: '70vh', overflow: 'auto', border: '1px solid var(--border)' }}>
             {PROP_GROUP_KEYS.map((g: keyof NodeProps) => {
               const defs = propRegistry.forCategory(node.category, g)
               if (defs.length === 0) return null
               return (
-                <details key={g} open={g === 'size' || g === 'content'}>
+                <details key={g} open={g === 'size' || g === 'content' || g === 'appearance'}>
                   <summary style={{ cursor: 'pointer', padding: '2px 4px' }}>{t.groups[g]}</summary>
                   <div style={{ padding: '0 4px 4px' }}>
                     {defs.map((def) => (
@@ -120,14 +151,26 @@ export function Inspector({ doc, history, pageId, language }: Props) {
                           margin: '2px 0',
                         }}
                       >
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {def.label[language]}
-                        </span>
+                        <PropLabel
+                          label={def.label[language]}
+                          language={language}
+                          state={labelState(g, def)}
+                          canReset={!detached}
+                          onReset={() => reset(g, def)}
+                        />
                         <PropControl
                           def={def}
                           value={node.props[g][def.key]}
                           language={language}
                           onCommit={(v, live) => set(def, v, live)}
+                        />
+                        <span />
+                        <TokenPicker
+                          def={def}
+                          value={node.props[g][def.key]}
+                          tokens={doc.tokens}
+                          language={language}
+                          onCommit={(v) => set(def, v)}
                         />
                       </label>
                     ))}

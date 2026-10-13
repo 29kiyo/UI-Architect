@@ -9,6 +9,7 @@ import { DeviceBar } from './DeviceBar'
 import { CanvasOverlay } from './CanvasOverlay'
 import { Ruler } from './Ruler'
 import { NodeView } from './NodeView'
+import { tokenStyle } from './tokenVars'
 import { hitFromElement, measureWorldRect } from './hit'
 import {
   finishGesture,
@@ -507,6 +508,7 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
                   top: a.rect.y,
                   width: a.rect.width,
                   height: a.rect.height,
+                  ...tokenStyle(doc.tokens),
                 }}
               >
                 <div
@@ -521,18 +523,6 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
                 >
                   {a.name} ({a.rect.width}×{a.rect.height})
                 </div>
-                {frameOf(a.deviceId).pad > 0 && (
-                  <div
-                    aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      inset: -frameOf(a.deviceId).pad,
-                      borderRadius: frameOf(a.deviceId).radius + frameOf(a.deviceId).pad,
-                      background: '#1c1c1e',
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
                 <div
                   style={{
                     position: 'relative',
@@ -542,7 +532,10 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
                     background: '#fff',
                     borderRadius: frameOf(a.deviceId).radius,
                     color: '#000',
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
+                    boxShadow:
+                      frameOf(a.deviceId).pad > 0
+                        ? `0 0 0 ${frameOf(a.deviceId).pad}px #1c1c1e, 0 2px 12px rgba(0,0,0,0.25)`
+                        : '0 2px 12px rgba(0,0,0,0.25)',
                   }}
                 >
                   <NodeView page={page} deviceId={a.deviceId} nodeId={page.rootNodeId} />
@@ -552,7 +545,7 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
         </div>
         <CanvasOverlay
           viewport={vp}
-          artboards={artboards}
+          artboards={artboards.filter((a) => frameOf(a.deviceId).pad === 0)}
           selected={boxes.selected}
           hover={boxes.hover}
           marquee={marqueeRect ?? undefined}

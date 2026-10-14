@@ -10,6 +10,7 @@ import {
   updateAt,
   updateStop,
 } from './editing'
+import { LiveColor } from './LiveColor'
 import {
   composeTransform,
   formatLinearGradient,
@@ -79,12 +80,11 @@ function ColorBox({
   label: string
 }) {
   return (
-    <input
-      type="color"
-      aria-label={label}
+    <LiveColor
+      label={label}
       value={HEX.test(value) ? value : '#000000'}
-      style={{ width: 24, padding: 0, flexShrink: 0 }}
-      onChange={(e) => onChange(e.target.value, true)}
+      width={24}
+      onChange={(c) => onChange(c, true)}
     />
   )
 }

@@ -1,10 +1,4 @@
-import {
-  PROP_GROUP_KEYS,
-  resolveNode,
-  type History,
-  type Props as NodeProps,
-  type UIDocument,
-} from '@/core'
+import { PROP_GROUP_KEYS, type History, type Props as NodeProps, type UIDocument } from '@/core'
 import { createPropsCommand, isBaseDevice } from '../canvas/commands'
 import { useSelection } from '../canvas/selection'
 import { PropControl } from './controls'
@@ -16,6 +10,7 @@ import {
   overrideState,
 } from './overrideCommands'
 import { OverrideBar, PropLabel } from './overrideUi'
+import { applicableNodes, resolveSelected, shownValue, writesFor } from './multi'
 import { TokenPicker } from './tokenUi'
 import { propRegistry, type PropDef } from './registry'
 
@@ -30,7 +25,7 @@ const TEXT = {
   ja: {
     title: 'インスペクタ',
     empty: '要素を選択してください',
-    multi: (n: number) => `${n} 件選択中(先頭の 1 件を編集)`,
+    multi: (n: number) => `${n} 件選択中(一括編集。値が違う項目は —)`,
     category: '種類',
     groups: {
       layout: 'レイアウト',
@@ -52,7 +47,7 @@ const TEXT = {
   en: {
     title: 'Inspector',
     empty: 'Select an element',
-    multi: (n: number) => `${n} selected (editing the first)`,
+    multi: (n: number) => `${n} selected (bulk edit; differing values show —)`,
     category: 'Category',
     groups: {
       layout: 'Layout',
@@ -73,17 +68,22 @@ const TEXT = {
   },
 } as const
 
+type Cmd = Parameters<History['execute']>[0]
+
 export function Inspector({ doc, history, pageId, language }: Props) {
   const t = TEXT[language]
   const selectedIds = useSelection((s) => s.selectedIds)
   const activeDeviceId = useSelection((s) => s.activeDeviceId)
   const page = doc.pages.find((p) => p.id === pageId) ?? doc.pages[0]
   const deviceId = activeDeviceId ?? doc.devices[0]?.id
-  const nodeId = selectedIds[0]
-  const node = page && deviceId && nodeId ? resolveNode(page, deviceId, nodeId) : undefined
+  const nodes = page && deviceId ? resolveSelected(page, deviceId, selectedIds) : []
+  const first = nodes[0]
+  const idsKey = nodes.map((n) => n.id).join(',')
 
   const set = (def: PropDef, value: string | number, live = false) => {
-    if (!page || !deviceId || !node) return
+    if (!page || !deviceId) return
+    const writes = writesFor(nodes, def, value)
+    if (writes.length === 0) return
     history.execute(
       createPropsCommand({
         name: `inspector: ${def.key}`,
@@ -91,89 +91,123 @@ export function Inspector({ doc, history, pageId, language }: Props) {
         deviceId,
         // デバイス別に持てない値(content 等)は常に共有側へ
         base: def.deviceOverridable ? isBaseDevice(doc.devices, deviceId) : true,
-        writes: [{ nodeId: node.id, group: def.group, key: def.key, value }],
-        ...(live
-          ? { coalesceKey: `inspector:${node.id}:${deviceId}:${def.group}.${def.key}` }
-          : {}),
+        writes,
+        ...(live ? { coalesceKey: `inspector:${deviceId}:${def.group}.${def.key}:${idsKey}` } : {}),
       }),
     )
   }
 
-  const target =
-    page && deviceId && node ? { pageId: page.id, deviceId, nodeId: node.id } : undefined
-  const detached = page && deviceId && node ? isDetachedAt(page, deviceId, node.id) : false
-  const reset = (g: keyof NodeProps, def: PropDef) => {
-    if (target) history.execute(createResetPropCommand(target, g, def.key))
+  const targets =
+    page && deviceId ? nodes.map((n) => ({ pageId: page.id, deviceId, nodeId: n.id })) : []
+  // 複数ノードの操作は 1 履歴にまとめる
+  const runAll = (name: string, cmds: Cmd[]) => {
+    const [only] = cmds
+    if (!only) return
+    if (cmds.length === 1) history.execute(only)
+    else
+      history.transaction(name, () => {
+        for (const c of cmds) history.execute(c)
+      })
   }
-  // 印は「上書き中」のときだけ。デバイス別に持てない値は常に印なし
+  const detachedAll =
+    !!page &&
+    !!deviceId &&
+    nodes.length > 0 &&
+    nodes.every((n) => isDetachedAt(page, deviceId, n.id))
+  const canReset = !!page && !!deviceId && nodes.some((n) => !isDetachedAt(page, deviceId, n.id))
+  const stateAt = (g: keyof NodeProps, def: PropDef, id: string) =>
+    page && deviceId ? overrideState(page, deviceId, id, g, def.key) : 'shared'
+  // 印は「1 つでも上書き中」のときだけ。デバイス別に持てない値は常に印なし
   const labelState = (g: keyof NodeProps, def: PropDef) =>
-    page && deviceId && node && def.deviceOverridable
-      ? overrideState(page, deviceId, node.id, g, def.key)
+    def.deviceOverridable &&
+    applicableNodes(nodes, def).some((n) => stateAt(g, def, n.id) === 'overridden')
+      ? 'overridden'
       : undefined
+  const reset = (g: keyof NodeProps, def: PropDef) => {
+    if (!page || !deviceId) return
+    runAll(
+      'reset override',
+      targets
+        .filter(
+          (tg) =>
+            !isDetachedAt(page, deviceId, tg.nodeId) && stateAt(g, def, tg.nodeId) === 'overridden',
+        )
+        .map((tg) => createResetPropCommand(tg, g, def.key)),
+    )
+  }
 
   return (
     <section aria-label={t.title} style={{ textAlign: 'left', fontSize: 12 }}>
       <h3 style={{ margin: '4px 0' }}>{t.title}</h3>
-      {!node ? (
+      {!first ? (
         <div>{t.empty}</div>
       ) : (
         <>
-          {selectedIds.length > 1 && <div>{t.multi(selectedIds.length)}</div>}
-          <div style={{ margin: '4px 0' }}>
-            <strong>{node.name}</strong> ({t.category}: {node.category})
-          </div>
+          {nodes.length > 1 ? (
+            <div style={{ margin: '4px 0' }}>{t.multi(nodes.length)}</div>
+          ) : (
+            <div style={{ margin: '4px 0' }}>
+              <strong>{first.name}</strong> ({t.category}: {first.category})
+            </div>
+          )}
           {deviceId && (
             <OverrideBar
               deviceName={doc.devices.find((d) => d.id === deviceId)?.name ?? ''}
               isBase={isBaseDevice(doc.devices, deviceId)}
-              detached={detached}
+              detached={detachedAll}
               language={language}
-              onDetach={() => target && history.execute(createDetachCommand(target))}
-              onAttach={() => target && history.execute(createAttachCommand(target))}
+              onDetach={() => runAll('detach', targets.map(createDetachCommand))}
+              onAttach={() => runAll('attach', targets.map(createAttachCommand))}
             />
           )}
           <div style={{ maxHeight: '70vh', overflow: 'auto', border: '1px solid var(--border)' }}>
             {PROP_GROUP_KEYS.map((g: keyof NodeProps) => {
-              const defs = propRegistry.forCategory(node.category, g)
+              const defs = propRegistry
+                .forGroup(g)
+                .filter((d) => applicableNodes(nodes, d).length > 0)
               if (defs.length === 0) return null
               return (
                 <details key={g} open={g === 'size' || g === 'content' || g === 'appearance'}>
                   <summary style={{ cursor: 'pointer', padding: '2px 4px' }}>{t.groups[g]}</summary>
                   <div style={{ padding: '0 4px 4px' }}>
-                    {defs.map((def) => (
-                      <label
-                        key={`${node.id}:${deviceId}:${g}.${def.key}`}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: '96px 1fr',
-                          gap: 4,
-                          alignItems: 'center',
-                          margin: '2px 0',
-                        }}
-                      >
-                        <PropLabel
-                          label={def.label[language]}
-                          language={language}
-                          state={labelState(g, def)}
-                          canReset={!detached}
-                          onReset={() => reset(g, def)}
-                        />
-                        <PropControl
-                          def={def}
-                          value={node.props[g][def.key]}
-                          language={language}
-                          onCommit={(v, live) => set(def, v, live)}
-                        />
-                        <span />
-                        <TokenPicker
-                          def={def}
-                          value={node.props[g][def.key]}
-                          tokens={doc.tokens}
-                          language={language}
-                          onCommit={(v) => set(def, v)}
-                        />
-                      </label>
-                    ))}
+                    {defs.map((def) => {
+                      const sv = shownValue(nodes, def)
+                      return (
+                        <label
+                          key={`${idsKey}:${deviceId}:${g}.${def.key}`}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '96px 1fr',
+                            gap: 4,
+                            alignItems: 'center',
+                            margin: '2px 0',
+                          }}
+                        >
+                          <PropLabel
+                            label={def.label[language]}
+                            language={language}
+                            state={labelState(g, def)}
+                            canReset={canReset}
+                            onReset={() => reset(g, def)}
+                          />
+                          <PropControl
+                            def={def}
+                            value={sv.value}
+                            mixed={sv.mixed}
+                            language={language}
+                            onCommit={(v, live) => set(def, v, live)}
+                          />
+                          <span />
+                          <TokenPicker
+                            def={def}
+                            value={sv.value}
+                            tokens={doc.tokens}
+                            language={language}
+                            onCommit={(v) => set(def, v)}
+                          />
+                        </label>
+                      )
+                    })}
                   </div>
                 </details>
               )

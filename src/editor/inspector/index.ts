@@ -38,3 +38,4 @@ export {
 export { createRemoveTokenCommand, createSetTokenCommand } from './tokenCommands'
 export { OverrideBar, PropLabel } from './overrideUi'
 export { TokenPanel, TokenPicker, tokenKindFor } from './tokenUi'
+export { appliesTo, applicableNodes, resolveSelected, shownValue, writesFor } from './multi'

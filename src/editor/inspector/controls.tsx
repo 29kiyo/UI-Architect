@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import { normalizeInput } from './commit'
+import { LiveColor } from './LiveColor'
 import { GradientEditor, ShadowEditor, TransformEditor } from './editors'
 import type { PropDef } from './registry'
 import { formatLength, parseLength } from './values'
@@ -10,6 +11,7 @@ export type OnCommit = (value: string | number, live?: boolean) => void
 type CtlProps = {
   def: PropDef
   value: unknown
+  mixed?: boolean | undefined
   onCommit: OnCommit
   language: 'ja' | 'en'
 }
@@ -32,7 +34,7 @@ function useDraft(value: unknown): [string, (s: string) => void, string] {
 }
 
 // text / number / length / color の文字入力。blur か Enter で確定
-function TextLike({ def, value, onCommit, type }: CtlProps & { type?: 'number' | 'text' }) {
+function TextLike({ def, value, onCommit, type, mixed }: CtlProps & { type?: 'number' | 'text' }) {
   const [draft, setDraft, str] = useDraft(value)
   const commit = () => {
     const v = normalizeInput(def, draft)
@@ -43,6 +45,7 @@ function TextLike({ def, value, onCommit, type }: CtlProps & { type?: 'number' |
   return (
     <input
       type={type ?? 'text'}
+      placeholder={mixed ? '—' : ''}
       value={draft}
       {...(def.type === 'number'
         ? {
@@ -134,12 +137,11 @@ export function ColorControl(p: CtlProps) {
   const cur = asString(p.value)
   return (
     <span style={{ display: 'flex', gap: 2 }}>
-      <input
-        type="color"
-        aria-label={`${p.def.key} picker`}
+      <LiveColor
+        label={`${p.def.key} picker`}
         value={HEX.test(cur) ? cur : '#000000'}
-        style={{ width: 28, padding: 0, flexShrink: 0 }}
-        onChange={(e) => p.onCommit(e.target.value, true)}
+        width={28}
+        onChange={(v) => p.onCommit(v, true)}
       />
       <span style={{ flex: 1, minWidth: 0 }}>
         <TextLike {...p} />
@@ -166,7 +168,7 @@ export function PropControl(p: CtlProps) {
   return (
     <>
       <BasicControl {...p} />
-      <Special {...p} />
+      {!p.mixed && <Special {...p} />}
     </>
   )
 }

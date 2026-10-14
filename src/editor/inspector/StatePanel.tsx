@@ -129,13 +129,15 @@ export function StatePanel({ doc, history, pageId, language }: Props) {
                     }}
                   >
                     <span>{def.label[language]}</span>
-                    <PropControl
-                      def={def}
-                      value={value}
-                      mixed={mixed}
-                      language={language}
-                      onCommit={(v, live) => write(def, v, live)}
-                    />
+                    <div style={{ minWidth: 0 }}>
+                      <PropControl
+                        def={def}
+                        value={value}
+                        mixed={mixed}
+                        language={language}
+                        onCommit={(v, live) => write(def, v, live)}
+                      />
+                    </div>
                     <button
                       type="button"
                       title={t.clear}

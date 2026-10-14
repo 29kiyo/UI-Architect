@@ -25,8 +25,14 @@ import {
 
 type Commit = (value: string, live?: boolean) => void
 
-const ROW: CSSProperties = { display: 'flex', gap: 2, alignItems: 'center', margin: '2px 0' }
-const NUMIN: CSSProperties = { width: 48, fontSize: 12, minWidth: 0 }
+const ROW: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 2,
+  alignItems: 'center',
+  margin: '2px 0',
+}
+const NUMIN: CSSProperties = { width: 42, fontSize: 12, minWidth: 0 }
 const HEX = /^#[0-9a-f]{6}$/i
 
 // 数値入力。blur / Enter で確定(入力途中は保持)

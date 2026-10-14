@@ -39,3 +39,6 @@ export { createRemoveTokenCommand, createSetTokenCommand } from './tokenCommands
 export { OverrideBar, PropLabel } from './overrideUi'
 export { TokenPanel, TokenPicker, tokenKindFor } from './tokenUi'
 export { appliesTo, applicableNodes, resolveSelected, shownValue, writesFor } from './multi'
+export { StatePanel } from './StatePanel'
+export { createStateStyleCommand, STATE_NAMES, STATE_PROPS, stateStyleOf } from './stateStyle'
+export type { StateName, StateWrite } from './stateStyle'

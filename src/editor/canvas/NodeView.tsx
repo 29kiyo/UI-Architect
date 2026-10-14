@@ -8,6 +8,7 @@ import {
 } from 'react'
 import { orderChildren, resolveProps } from '@/core'
 import type { Node, Page } from '@/core'
+import { previewStateFor, statePreview } from './statePreview'
 import { nodeStyle } from './style'
 
 const MAX_DEPTH = 200
@@ -54,6 +55,8 @@ const NodeViewInner = memo(function NodeViewInner({ nodeId, deviceId, depth }: P
     store?.subscribe ?? noopSubscribe,
     () => store?.get().overrides[deviceId]?.[nodeId],
   )
+  // 状態プレビュー(選択ノードにだけ値が入る。他のノードは undefined のまま再描画されない)
+  const previewState = useSyncExternalStore(statePreview.subscribe, () => previewStateFor(nodeId))
   if (!node || depth > MAX_DEPTH) return null
   // override が無ければ共有ノードをそのまま使う
   const n: Node = override
@@ -64,7 +67,7 @@ const NodeViewInner = memo(function NodeViewInner({ nodeId, deviceId, depth }: P
         children: orderChildren(node.children, override.order),
       }
     : node
-  const style = nodeStyle(n)
+  const style = nodeStyle(n, previewState)
   const c = n.props.content
 
   if (n.type === 'text') {

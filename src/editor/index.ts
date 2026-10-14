@@ -100,3 +100,5 @@ export {
   overrideState,
 } from './inspector'
 export { TokenPanel, TokenPicker, tokenKindFor } from './inspector'
+export { StatePanel, createStateStyleCommand, STATE_NAMES, stateStyleOf } from './inspector'
+export { setStatePreview, previewStateFor } from './canvas/statePreview'

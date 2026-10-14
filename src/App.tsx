@@ -8,6 +8,7 @@ import {
   LayerPanel,
   NodesPreview,
   Palette,
+  StatePanel,
   TokenPanel,
 } from '@/editor'
 import { ImportDialog } from '@/io'
@@ -81,6 +82,7 @@ export default function App() {
         </div>
         <aside style={{ width: 300, flexShrink: 0 }}>
           <Inspector doc={doc} history={history} language={language} />
+          <StatePanel doc={doc} history={history} language={language} />
           <TokenPanel tokens={doc.tokens} history={history} language={language} />
         </aside>
       </div>

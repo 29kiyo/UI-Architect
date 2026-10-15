@@ -2,6 +2,7 @@ import { PROP_GROUP_KEYS, type History, type Props as NodeProps, type UIDocument
 import { createPropsCommand, isBaseDevice } from '../canvas/commands'
 import { useSelection } from '../canvas/selection'
 import { PropControl } from './controls'
+import { ColorEndContext } from './LiveColor'
 import {
   createAttachCommand,
   createDetachCommand,
@@ -137,84 +138,88 @@ export function Inspector({ doc, history, pageId, language }: Props) {
   }
 
   return (
-    <section aria-label={t.title} style={{ textAlign: 'left', fontSize: 12 }}>
-      <h3 style={{ margin: '4px 0' }}>{t.title}</h3>
-      {!first ? (
-        <div>{t.empty}</div>
-      ) : (
-        <>
-          {nodes.length > 1 ? (
-            <div style={{ margin: '4px 0' }}>{t.multi(nodes.length)}</div>
-          ) : (
-            <div style={{ margin: '4px 0' }}>
-              <strong>{first.name}</strong> ({t.category}: {first.category})
+    <ColorEndContext.Provider value={() => history.breakCoalescing()}>
+      <section aria-label={t.title} style={{ textAlign: 'left', fontSize: 12 }}>
+        <h3 style={{ margin: '4px 0' }}>{t.title}</h3>
+        {!first ? (
+          <div>{t.empty}</div>
+        ) : (
+          <>
+            {nodes.length > 1 ? (
+              <div style={{ margin: '4px 0' }}>{t.multi(nodes.length)}</div>
+            ) : (
+              <div style={{ margin: '4px 0' }}>
+                <strong>{first.name}</strong> ({t.category}: {first.category})
+              </div>
+            )}
+            {deviceId && (
+              <OverrideBar
+                deviceName={doc.devices.find((d) => d.id === deviceId)?.name ?? ''}
+                isBase={isBaseDevice(doc.devices, deviceId)}
+                detached={detachedAll}
+                language={language}
+                onDetach={() => runAll('detach', targets.map(createDetachCommand))}
+                onAttach={() => runAll('attach', targets.map(createAttachCommand))}
+              />
+            )}
+            <div style={{ maxHeight: '70vh', overflow: 'auto', border: '1px solid var(--border)' }}>
+              {PROP_GROUP_KEYS.map((g: keyof NodeProps) => {
+                const defs = propRegistry
+                  .forGroup(g)
+                  .filter((d) => applicableNodes(nodes, d).length > 0)
+                if (defs.length === 0) return null
+                return (
+                  <details key={g} open={g === 'size' || g === 'content' || g === 'appearance'}>
+                    <summary style={{ cursor: 'pointer', padding: '2px 4px' }}>
+                      {t.groups[g]}
+                    </summary>
+                    <div style={{ padding: '0 4px 4px' }}>
+                      {defs.map((def) => {
+                        const sv = shownValue(nodes, def)
+                        return (
+                          <label
+                            key={`${idsKey}:${deviceId}:${g}.${def.key}`}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '96px 1fr',
+                              gap: 4,
+                              alignItems: 'center',
+                              margin: '2px 0',
+                            }}
+                          >
+                            <PropLabel
+                              label={def.label[language]}
+                              language={language}
+                              state={labelState(g, def)}
+                              canReset={canReset}
+                              onReset={() => reset(g, def)}
+                            />
+                            <PropControl
+                              def={def}
+                              value={sv.value}
+                              mixed={sv.mixed}
+                              language={language}
+                              onCommit={(v, live) => set(def, v, live)}
+                            />
+                            <span />
+                            <TokenPicker
+                              def={def}
+                              value={sv.value}
+                              tokens={doc.tokens}
+                              language={language}
+                              onCommit={(v) => set(def, v)}
+                            />
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </details>
+                )
+              })}
             </div>
-          )}
-          {deviceId && (
-            <OverrideBar
-              deviceName={doc.devices.find((d) => d.id === deviceId)?.name ?? ''}
-              isBase={isBaseDevice(doc.devices, deviceId)}
-              detached={detachedAll}
-              language={language}
-              onDetach={() => runAll('detach', targets.map(createDetachCommand))}
-              onAttach={() => runAll('attach', targets.map(createAttachCommand))}
-            />
-          )}
-          <div style={{ maxHeight: '70vh', overflow: 'auto', border: '1px solid var(--border)' }}>
-            {PROP_GROUP_KEYS.map((g: keyof NodeProps) => {
-              const defs = propRegistry
-                .forGroup(g)
-                .filter((d) => applicableNodes(nodes, d).length > 0)
-              if (defs.length === 0) return null
-              return (
-                <details key={g} open={g === 'size' || g === 'content' || g === 'appearance'}>
-                  <summary style={{ cursor: 'pointer', padding: '2px 4px' }}>{t.groups[g]}</summary>
-                  <div style={{ padding: '0 4px 4px' }}>
-                    {defs.map((def) => {
-                      const sv = shownValue(nodes, def)
-                      return (
-                        <label
-                          key={`${idsKey}:${deviceId}:${g}.${def.key}`}
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: '96px 1fr',
-                            gap: 4,
-                            alignItems: 'center',
-                            margin: '2px 0',
-                          }}
-                        >
-                          <PropLabel
-                            label={def.label[language]}
-                            language={language}
-                            state={labelState(g, def)}
-                            canReset={canReset}
-                            onReset={() => reset(g, def)}
-                          />
-                          <PropControl
-                            def={def}
-                            value={sv.value}
-                            mixed={sv.mixed}
-                            language={language}
-                            onCommit={(v, live) => set(def, v, live)}
-                          />
-                          <span />
-                          <TokenPicker
-                            def={def}
-                            value={sv.value}
-                            tokens={doc.tokens}
-                            language={language}
-                            onCommit={(v) => set(def, v)}
-                          />
-                        </label>
-                      )
-                    })}
-                  </div>
-                </details>
-              )
-            })}
-          </div>
-        </>
-      )}
-    </section>
+          </>
+        )}
+      </section>
+    </ColorEndContext.Provider>
   )
 }

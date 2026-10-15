@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { Node } from '@/core'
+import { parseCustomCss } from './customCss'
 
 // 描画に使う props グループ(compare.ts の暫定描画と同じ)
 const GROUPS = [
@@ -57,6 +58,8 @@ export function nodeStyle(n: Node, state?: string): CSSProperties {
       out[camel(k)] = v
     }
   }
+  const css = n.props.custom.customCss
+  if (typeof css === 'string') Object.assign(out, parseCustomCss(css))
   const st = state ? n.props.states[state] : undefined
   if (st && typeof st === 'object' && !Array.isArray(st)) {
     for (const [k, v] of Object.entries(st as Record<string, unknown>)) {

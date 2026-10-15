@@ -42,3 +42,6 @@ export { appliesTo, applicableNodes, resolveSelected, shownValue, writesFor } fr
 export { StatePanel } from './StatePanel'
 export { createStateStyleCommand, STATE_NAMES, STATE_PROPS, stateStyleOf } from './stateStyle'
 export type { StateName, StateWrite } from './stateStyle'
+export { validateInput, validationMessage } from './validate'
+export type { Invalid, Validation } from './validate'
+export { ColorEndContext } from './LiveColor'

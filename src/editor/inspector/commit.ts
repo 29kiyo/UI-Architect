@@ -2,7 +2,7 @@ import type { PropDef } from './registry'
 import { fmtNum, formatLength, parseLength } from './values'
 
 // 描画グループ(CSS になる値)では、スタイル文字列を壊す文字を拒否する(style.ts と同じ基準)
-const FORBIDDEN = /[;{}<>]/
+export const FORBIDDEN = /[;{}<>]/
 const TEXT_GROUPS = new Set(['content', 'custom'])
 // 単位なしの数値がそのまま意味を持つキー(px を付けると意味が変わる)
 const UNITLESS_OK = new Set(['lineHeight'])

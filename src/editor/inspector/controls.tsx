@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react'
-import { normalizeInput } from './commit'
+import { validateInput, validationMessage } from './validate'
 import { LiveColor } from './LiveColor'
 import { GradientEditor, ShadowEditor, TransformEditor } from './editors'
 import type { PropDef } from './registry'
@@ -34,34 +34,53 @@ function useDraft(value: unknown): [string, (s: string) => void, string] {
 }
 
 // text / number / length / color の文字入力。blur か Enter で確定
-function TextLike({ def, value, onCommit, type, mixed }: CtlProps & { type?: 'number' | 'text' }) {
+function TextLike({
+  def,
+  value,
+  onCommit,
+  type,
+  mixed,
+  language,
+}: CtlProps & { type?: 'number' | 'text' }) {
   const [draft, setDraft, str] = useDraft(value)
+  const [msg, setMsg] = useState<string | undefined>(undefined)
   const commit = () => {
-    const v = normalizeInput(def, draft)
-    if (v === undefined) setDraft(str)
-    else if (asString(v) !== str) onCommit(v)
+    const r = validateInput(def, draft)
+    setMsg(validationMessage(r, def, language))
+    if (!r.ok) setDraft(str)
+    else if (asString(r.value) !== str) onCommit(r.value)
     else setDraft(str)
   }
   return (
-    <input
-      type={type ?? 'text'}
-      placeholder={mixed ? '—' : ''}
-      value={draft}
-      {...(def.type === 'number'
-        ? {
-            step: def.step ?? 1,
-            ...(def.min !== undefined ? { min: def.min } : {}),
-            ...(def.max !== undefined ? { max: def.max } : {}),
-          }
-        : {})}
-      style={FIELD}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') e.currentTarget.blur()
-        if (e.key === 'Escape') setDraft(str)
-      }}
-    />
+    <>
+      <input
+        type={type ?? 'text'}
+        placeholder={mixed ? '—' : ''}
+        value={draft}
+        {...(def.type === 'number'
+          ? {
+              step: def.step ?? 1,
+              ...(def.min !== undefined ? { min: def.min } : {}),
+              ...(def.max !== undefined ? { max: def.max } : {}),
+            }
+          : {})}
+        style={FIELD}
+        onChange={(e) => {
+          setDraft(e.target.value)
+          setMsg(undefined)
+        }}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur()
+          if (e.key === 'Escape') setDraft(str)
+        }}
+      />
+      {msg && (
+        <span role="alert" style={{ display: 'block', color: '#d33', fontSize: 11 }}>
+          {msg}
+        </span>
+      )}
+    </>
   )
 }
 

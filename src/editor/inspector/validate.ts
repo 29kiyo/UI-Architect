@@ -19,6 +19,8 @@ export function validateInput(def: PropDef, raw: string): Validation {
   if (def.type !== 'text' && s === '') return { ok: false, reason: 'empty' }
   if (FORBIDDEN.test(s)) return { ok: false, reason: 'forbidden' }
   if (def.type === 'number' && !Number.isFinite(Number(s))) return { ok: false, reason: 'nan' }
+  if (def.type === 'length' && normalizeInput(def, raw) === undefined)
+    return { ok: false, reason: 'nan' }
   const value = normalizeInput(def, raw)
   if (value === undefined) return { ok: false, reason: 'empty' }
   let clamped = false

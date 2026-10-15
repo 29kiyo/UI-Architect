@@ -7,6 +7,7 @@ const def = (o: Partial<PropDef>): PropDef => ({
   group: 'size',
   label: { ja: '', en: '' },
   type: 'length',
+  units: ['px', '%', 'rem', 'auto'],
   deviceOverridable: true,
   ...o,
 })

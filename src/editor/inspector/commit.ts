@@ -29,8 +29,8 @@ export function normalizeInput(def: PropDef, raw: string): string | number | und
   }
   if (def.type === 'length') {
     const p = parseLength(s)
-    if (!p) return s // calc() / var() などはそのまま通す
-    if ('keyword' in p) return p.keyword
+    if (!p) return s.includes('(') ? s : undefined // calc() / var() などの関数形式だけ通す
+    if ('keyword' in p) return def.units?.includes(p.keyword) ? p.keyword : undefined
     const value = clamp(p.value, def)
     if (p.unit === '') {
       return UNITLESS_OK.has(def.key) ? fmtNum(value) : formatLength({ value, unit: 'px' })

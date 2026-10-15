@@ -7,6 +7,7 @@ const def = (o: Partial<PropDef>): PropDef => ({
   group: 'size',
   label: { ja: '', en: '' },
   type: 'length',
+  units: ['px', '%', 'rem', 'auto'],
   deviceOverridable: true,
   ...o,
 })
@@ -61,5 +62,19 @@ describe('normalizeInput', () => {
     ).toBe('none')
     expect(normalizeInput(def({ type: 'select' }), '')).toBeUndefined()
     expect(normalizeInput(def({ type: 'color' }), '#fff')).toBe('#fff')
+  })
+})
+
+describe('normalizeInput: length keywords', () => {
+  const d = def({ key: 'width', units: ['px', '%', 'auto'], min: 0 })
+  it('accepts only keywords listed in units', () => {
+    expect(normalizeInput(d, 'auto')).toBe('auto')
+    expect(normalizeInput(d, 'abc')).toBeUndefined()
+    expect(normalizeInput(d, 'none')).toBeUndefined()
+  })
+  it('still passes function forms but rejects bare words', () => {
+    expect(normalizeInput(d, 'var(--x)')).toBe('var(--x)')
+    expect(normalizeInput(d, 'calc(100% - 4px)')).toBe('calc(100% - 4px)')
+    expect(normalizeInput(d, '12 px')).toBeUndefined()
   })
 })

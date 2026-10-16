@@ -4,6 +4,7 @@ import { assetUrls, blobStore, docStore, fontLoader, history } from '@/appSessio
 import { putBlobs } from '@/core'
 import {
   addFiles,
+  addFontFiles,
   AssetUrlsContext,
   BenchButton,
   Canvas,
@@ -29,7 +30,16 @@ export default function App() {
   const hist = useSyncExternalStore(history.subscribe, history.getState)
   const [importOpen, setImportOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const fontRef = useRef<HTMLInputElement>(null)
   // 画像ファイルをアセットとして配置(選択/ドロップ/貼り付け共通)
+  // フォントファイルを Asset として追加(登録は doc.assets の同期で行われる)
+  const addFonts = (files: File[]) => {
+    const page = doc.pages[0]
+    if (!page || files.length === 0) return
+    addFontFiles({ doc, page, history }, files, { blobs: blobStore, urls: assetUrls }).catch(
+      (e: unknown) => console.error(e),
+    )
+  }
   const addImages = (files: File[], at?: FileDropAt) => {
     const page = doc.pages[0]
     if (!page || files.length === 0) return
@@ -74,11 +84,25 @@ export default function App() {
         <input
           ref={fileRef}
           type="file"
-          accept="image/*,.svg,.ttf,.otf,.woff,.woff2"
+          accept="image/*,.svg"
           multiple
           hidden
           onChange={(e) => {
             addImages(Array.from(e.target.files ?? []))
+            e.target.value = ''
+          }}
+        />{' '}
+        <button type="button" onClick={() => fontRef.current?.click()}>
+          {ja ? 'フォントを追加' : 'Add font'}
+        </button>
+        <input
+          ref={fontRef}
+          type="file"
+          accept=".ttf,.otf,.woff,.woff2"
+          multiple
+          hidden
+          onChange={(e) => {
+            addFonts(Array.from(e.target.files ?? []))
             e.target.value = ''
           }}
         />{' '}

@@ -2,6 +2,7 @@ import { PROP_GROUP_KEYS, type History, type Props as NodeProps, type UIDocument
 import { createPropsCommand, isBaseDevice } from '../canvas/commands'
 import { createAddAssetCommand, prepareImageAsset, type ImageSinks } from '../canvas/imageActions'
 import { AssetPicker } from './AssetPicker'
+import { FontPicker } from './FontPicker'
 import { useSelection } from '../canvas/selection'
 import { PropControl } from './controls'
 import { ColorEndContext } from './LiveColor'
@@ -224,6 +225,17 @@ export function Inspector({ doc, history, pageId, language, sinks }: Props) {
                               language={language}
                               onCommit={(v) => set(def, v)}
                             />
+                            {g === 'typography' && def.key === 'fontFamily' && (
+                              <>
+                                <span />
+                                <FontPicker
+                                  assets={doc.assets}
+                                  value={sv.value}
+                                  language={language}
+                                  onPick={(css) => set(def, css)}
+                                />
+                              </>
+                            )}
                             {g === 'content' && def.key === 'src' && (
                               <>
                                 <span />

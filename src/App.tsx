@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useStore } from 'zustand'
-import { assetUrls, blobStore, docStore, history } from '@/appSession'
+import { assetUrls, blobStore, docStore, fontLoader, history } from '@/appSession'
 import { putBlobs } from '@/core'
 import {
   addFiles,
@@ -49,6 +49,7 @@ export default function App() {
       doc.assets.map((a) => a.id),
       blobStore,
     )
+    void fontLoader.sync(doc.assets, blobStore)
   }, [doc.assets])
 
   useEffect(() => {
@@ -73,7 +74,7 @@ export default function App() {
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept="image/*,.svg,.ttf,.otf,.woff,.woff2"
           multiple
           hidden
           onChange={(e) => {

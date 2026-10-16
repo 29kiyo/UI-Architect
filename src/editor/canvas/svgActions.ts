@@ -1,6 +1,7 @@
 import { createSvgNode, sanitizeSvg, toCurrentColor, type Id, type Node } from '@/core'
 import { logger } from '@/shared'
 import type { EditEnv } from './actions'
+import { addFontFiles, isFontFile } from './fontActions'
 import { addImageFiles, type FileDropAt, type ImageSinks } from './imageActions'
 import { createAddNodeCommand } from './nodeCommands'
 import { planPaletteDrop } from './palette'
@@ -59,9 +60,11 @@ export async function addFiles(
   at?: FileDropAt,
 ): Promise<Id[]> {
   const svgs = files.filter(isSvgFile)
-  const rest = files.filter((f) => !isSvgFile(f))
+  const fonts = files.filter(isFontFile)
+  const rest = files.filter((f) => !isSvgFile(f) && !isFontFile(f))
   const ids: Id[] = []
   if (rest.length > 0) ids.push(...(await addImageFiles(env, rest, sinks, at)))
   if (svgs.length > 0) ids.push(...(await addSvgFiles(env, svgs, at)))
+  if (fonts.length > 0) ids.push(...(await addFontFiles(env, fonts, sinks)))
   return ids
 }

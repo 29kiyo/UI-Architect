@@ -2,6 +2,7 @@ import {
   createAssetUrlStore,
   createDocumentStore,
   createEmptyDocument,
+  createFontLoader,
   createHistory,
   createIndexedDbBlobStore,
 } from '@/core'
@@ -13,3 +14,5 @@ export const history = createHistory(docStore)
 // アセットのバイナリ(IndexedDB。最初に使うまで開かない)と、描画用 Blob URL
 export const blobStore = createIndexedDbBlobStore()
 export const assetUrls = createAssetUrlStore()
+// doc.assets のフォントを FontFace として登録する
+export const fontLoader = createFontLoader()

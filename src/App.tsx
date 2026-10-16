@@ -3,7 +3,7 @@ import { useStore } from 'zustand'
 import { assetUrls, blobStore, docStore, history } from '@/appSession'
 import { putBlobs } from '@/core'
 import {
-  addImageFiles,
+  addFiles,
   AssetUrlsContext,
   BenchButton,
   Canvas,
@@ -33,7 +33,7 @@ export default function App() {
   const addImages = (files: File[], at?: FileDropAt) => {
     const page = doc.pages[0]
     if (!page || files.length === 0) return
-    addImageFiles({ doc, page, history }, files, { blobs: blobStore, urls: assetUrls }, at).catch(
+    addFiles({ doc, page, history }, files, { blobs: blobStore, urls: assetUrls }, at).catch(
       (e: unknown) => console.error(e),
     )
   }

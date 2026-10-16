@@ -6,7 +6,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
-import { orderChildren, resolveAssetSrc, resolveProps } from '@/core'
+import { applySvgColor, orderChildren, resolveAssetSrc, resolveProps } from '@/core'
 import type { Node, Page } from '@/core'
 import { AssetUrlsContext } from './assetUrlsContext'
 import { previewStateFor, statePreview } from './statePreview'
@@ -100,8 +100,16 @@ const NodeViewInner = memo(function NodeViewInner({ nodeId, deviceId, depth }: P
     )
   }
   if (n.type === 'svg') {
+    const tc = n.props.typography.color
+    const svgColor = typeof tc === 'string' ? tc : '#000000'
     return typeof c.svg === 'string' ? (
-      <img data-node-id={n.id} src={svgDataUrl(c.svg)} alt="" draggable={false} style={style} />
+      <img
+        data-node-id={n.id}
+        src={svgDataUrl(applySvgColor(c.svg, svgColor))}
+        alt=""
+        draggable={false}
+        style={style}
+      />
     ) : (
       <div data-node-id={n.id} style={{ background: PLACEHOLDER, ...style }} />
     )

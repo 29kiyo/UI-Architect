@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useStore } from 'zustand'
 import { assetUrls, blobStore, docStore, fontLoader, history } from '@/appSession'
-import { openProjectZip, putBlobs, replaceDocument, saveProjectZip } from '@/core'
+import { getHomePage, openProjectZip, putBlobs, replaceDocument, saveProjectZip } from '@/core'
 import {
   addFiles,
   addFontFiles,
@@ -12,7 +12,9 @@ import {
   Inspector,
   LayerPanel,
   NodesPreview,
+  PagePanel,
   Palette,
+  selectionStore,
   StatePanel,
   TokenPanel,
   type FileDropAt,
@@ -30,19 +32,20 @@ export default function App() {
   const doc = useStore(docStore, (s) => s.doc)
   const hist = useSyncExternalStore(history.subscribe, history.getState)
   const [importOpen, setImportOpen] = useState(false)
+  const [pageIdState, setPageId] = useState<string | undefined>(undefined)
+  const page = doc.pages.find((p) => p.id === pageIdState) ?? getHomePage(doc)
+  const pageId = page?.id
   const fileRef = useRef<HTMLInputElement>(null)
   const fontRef = useRef<HTMLInputElement>(null)
   // 画像ファイルをアセットとして配置(選択/ドロップ/貼り付け共通)
   // フォントファイルを Asset として追加(登録は doc.assets の同期で行われる)
   const addFonts = (files: File[]) => {
-    const page = doc.pages[0]
     if (!page || files.length === 0) return
     addFontFiles({ doc, page, history }, files, { blobs: blobStore, urls: assetUrls }).catch(
       (e: unknown) => console.error(e),
     )
   }
   const addImages = (files: File[], at?: FileDropAt) => {
-    const page = doc.pages[0]
     if (!page || files.length === 0) return
     addFiles({ doc, page, history }, files, { blobs: blobStore, urls: assetUrls }, at).catch(
       (e: unknown) => console.error(e),
@@ -85,6 +88,11 @@ export default function App() {
     )
     void fontLoader.sync(doc.assets, blobStore)
   }, [doc.assets])
+
+  // ページ切替・削除・開くで、別ページのノード選択が残らないようにする
+  useEffect(() => {
+    selectionStore.getState().clear()
+  }, [pageId])
 
   useEffect(() => {
     logger.setLevel(logLevel)
@@ -150,7 +158,7 @@ export default function App() {
           />
         )}{' '}
         <span>
-          {Object.keys(doc.pages[0]?.nodes ?? {}).length} {ja ? 'ノード' : 'nodes'}
+          {Object.keys(page?.nodes ?? {}).length} {ja ? 'ノード' : 'nodes'}
         </span>
       </p>
       {importOpen && (
@@ -169,7 +177,14 @@ export default function App() {
       <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
         <aside style={{ width: 240, flexShrink: 0, textAlign: 'left' }}>
           <Palette language={language} />
-          <LayerPanel doc={doc} history={history} language={language} />
+          <PagePanel
+            doc={doc}
+            history={history}
+            pageId={pageId}
+            language={language}
+            onSelect={setPageId}
+          />
+          <LayerPanel doc={doc} history={history} pageId={pageId} language={language} />
           <AssetPanel
             doc={doc}
             history={history}
@@ -185,7 +200,14 @@ export default function App() {
         </aside>
         <div style={{ flex: 1, minWidth: 0 }}>
           <AssetUrlsContext.Provider value={assetUrls}>
-            <Canvas doc={doc} history={history} language={language} onFiles={addImages} />
+            <Canvas
+              key={pageId}
+              doc={doc}
+              history={history}
+              pageId={pageId}
+              language={language}
+              onFiles={addImages}
+            />
           </AssetUrlsContext.Provider>
         </div>
         <aside style={{ width: 300, flexShrink: 0 }}>
@@ -193,9 +215,10 @@ export default function App() {
             doc={doc}
             history={history}
             language={language}
+            pageId={pageId}
             sinks={{ blobs: blobStore, urls: assetUrls }}
           />
-          <StatePanel doc={doc} history={history} language={language} />
+          <StatePanel doc={doc} history={history} pageId={pageId} language={language} />
           <TokenPanel tokens={doc.tokens} history={history} language={language} />
         </aside>
       </div>

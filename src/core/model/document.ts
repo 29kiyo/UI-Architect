@@ -87,6 +87,7 @@ export const UIDocumentSchema = z.object({
     name: z.string(),
     createdAt: z.number().optional(),
     updatedAt: z.number().optional(),
+    homePageId: IdSchema.optional(),
   }),
   devices: z.array(DeviceSchema).default([]),
   pages: z.array(PageSchema).default([]),

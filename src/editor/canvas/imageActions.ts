@@ -111,3 +111,28 @@ export function addImageFiles(
     return ids
   })
 }
+
+export const createAddAssetCommand = (asset: Asset): Command => ({
+  name: 'add-asset',
+  apply: (d) => {
+    if (!d.assets.some((a) => a.id === asset.id)) d.assets.push(AssetSchema.parse(asset))
+  },
+})
+
+// 画像ファイル → Asset(同じ hash は既存を返す)。バイナリは保存するが、ドキュメントは変更しない
+export async function prepareImageAsset(
+  doc: { assets: readonly Asset[] },
+  file: File,
+  sinks: ImageSinks,
+): Promise<Asset | undefined> {
+  const data = await file.arrayBuffer()
+  const built = await buildAsset({ name: file.name || 'image', mime: file.type, data })
+  if (built.asset.kind !== 'image') return undefined
+  const known = doc.assets.find((a) => a.hash === built.asset.hash)
+  if (known) return known
+  const dims = await readImageSize(data, built.asset.mime)
+  const asset = dims ? { ...built.asset, ...dims } : built.asset
+  await sinks.blobs.put(asset.id, built.blob)
+  sinks.urls.set(asset.id, built.blob)
+  return asset
+}

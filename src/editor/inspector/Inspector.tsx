@@ -1,5 +1,7 @@
 import { PROP_GROUP_KEYS, type History, type Props as NodeProps, type UIDocument } from '@/core'
 import { createPropsCommand, isBaseDevice } from '../canvas/commands'
+import { createAddAssetCommand, prepareImageAsset, type ImageSinks } from '../canvas/imageActions'
+import { AssetPicker } from './AssetPicker'
 import { useSelection } from '../canvas/selection'
 import { PropControl } from './controls'
 import { ColorEndContext } from './LiveColor'
@@ -20,6 +22,8 @@ type Props = {
   history: History
   pageId?: string | undefined
   language: 'ja' | 'en'
+  // 画像のファイル差し替え用の保存先(未指定ならボタンを出さない)
+  sinks?: ImageSinks | undefined
 }
 
 const TEXT = {
@@ -71,7 +75,7 @@ const TEXT = {
 
 type Cmd = Parameters<History['execute']>[0]
 
-export function Inspector({ doc, history, pageId, language }: Props) {
+export function Inspector({ doc, history, pageId, language, sinks }: Props) {
   const t = TEXT[language]
   const selectedIds = useSelection((s) => s.selectedIds)
   const activeDeviceId = useSelection((s) => s.activeDeviceId)
@@ -96,6 +100,17 @@ export function Inspector({ doc, history, pageId, language }: Props) {
         ...(live ? { coalesceKey: `inspector:${deviceId}:${def.group}.${def.key}:${idsKey}` } : {}),
       }),
     )
+  }
+
+  // 画像ファイルを Asset 化し、Asset 追加と src 更新を 1 履歴にまとめる
+  const replaceFromFile = async (def: PropDef, file: File) => {
+    if (!sinks) return
+    const asset = await prepareImageAsset(doc, file, sinks)
+    if (!asset) return
+    history.transaction('replace image', () => {
+      history.execute(createAddAssetCommand(asset))
+      set(def, `asset:${asset.id}`)
+    })
   }
 
   const targets =
@@ -209,6 +224,19 @@ export function Inspector({ doc, history, pageId, language }: Props) {
                               language={language}
                               onCommit={(v) => set(def, v)}
                             />
+                            {g === 'content' && def.key === 'src' && (
+                              <>
+                                <span />
+                                <AssetPicker
+                                  assets={doc.assets}
+                                  value={sv.value}
+                                  language={language}
+                                  canReplaceFile={!!sinks}
+                                  onPick={(id) => set(def, `asset:${id}`)}
+                                  onFile={(f) => void replaceFromFile(def, f)}
+                                />
+                              </>
+                            )}
                           </label>
                         )
                       })}

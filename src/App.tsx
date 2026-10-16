@@ -122,7 +122,12 @@ export default function App() {
           </AssetUrlsContext.Provider>
         </div>
         <aside style={{ width: 300, flexShrink: 0 }}>
-          <Inspector doc={doc} history={history} language={language} />
+          <Inspector
+            doc={doc}
+            history={history}
+            language={language}
+            sinks={{ blobs: blobStore, urls: assetUrls }}
+          />
           <StatePanel doc={doc} history={history} language={language} />
           <TokenPanel tokens={doc.tokens} history={history} language={language} />
         </aside>

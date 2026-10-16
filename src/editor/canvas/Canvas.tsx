@@ -22,6 +22,7 @@ import {
 } from './gesture'
 import { dropCategory } from './actions'
 import { PALETTE_MIME } from './palette'
+import type { FileDropAt } from './imageActions'
 import { selectionStore, useSelection } from './selection'
 import { getRotation, isHandleId, type Line } from './transform'
 import { artboardForMarquee, marqueeTargets, normalizeRect, resolveTarget } from './target'
@@ -42,6 +43,8 @@ type Props = {
   pageId?: string | undefined
   language: 'ja' | 'en'
   height?: number | string
+  // 画像ファイルのドロップ(位置つき)。貼り付けは useEditorShortcuts 経由
+  onFiles?: ((files: File[], at?: FileDropAt) => void) | undefined
 }
 
 const TEXT = {
@@ -65,7 +68,7 @@ const TEXT = {
   },
 } as const
 
-export function Canvas({ doc, history, pageId, language, height = '70vh' }: Props) {
+export function Canvas({ doc, history, pageId, language, height = '70vh', onFiles }: Props) {
   const t = TEXT[language]
   const ref = useRef<HTMLDivElement>(null)
   const drag = useRef<{ x: number; y: number } | null>(null)
@@ -134,7 +137,7 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
     )
     setPaletteOpen(true)
   }
-  useEditorShortcuts(doc, page, history, openPalette)
+  useEditorShortcuts(doc, page, history, openPalette, onFiles)
 
   // Undo 等で消えたノードを選択から外す
   useEffect(() => {
@@ -366,13 +369,30 @@ export function Canvas({ doc, history, pageId, language, height = '70vh' }: Prop
 
   // パレットからのドロップ: ドロップ位置のコンテナに追加
   const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    if (!e.dataTransfer.types.includes(PALETTE_MIME)) return
+    const hasFiles = !!onFiles && e.dataTransfer.types.includes('Files')
+    if (!hasFiles && !e.dataTransfer.types.includes(PALETTE_MIME)) return
     e.preventDefault()
     e.dataTransfer.dropEffect = 'copy'
   }
   const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    const category = e.dataTransfer.getData(PALETTE_MIME)
+    const files = onFiles ? Array.from(e.dataTransfer.files) : []
     const el = ref.current
+    if (files.length > 0 && page && el) {
+      e.preventDefault()
+      const d =
+        e.target instanceof Element ? e.target.closest<HTMLElement>('[data-device-id]') : null
+      const did = d?.dataset.deviceId
+      if (did && onFiles) {
+        onFiles(files, {
+          deviceId: did,
+          hitId: hitFromElement(e.target)?.nodeId,
+          world: toWorld(e),
+          rectOf: (id) => measureWorldRect(el, vp, did, id),
+        })
+      }
+      return
+    }
+    const category = e.dataTransfer.getData(PALETTE_MIME)
     if (!category || !page || !el) return
     e.preventDefault()
     const dev =

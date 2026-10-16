@@ -1,8 +1,9 @@
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useStore } from 'zustand'
 import { assetUrls, blobStore, docStore, history } from '@/appSession'
 import { putBlobs } from '@/core'
 import {
+  addImageFiles,
   AssetUrlsContext,
   BenchButton,
   Canvas,
@@ -12,6 +13,7 @@ import {
   Palette,
   StatePanel,
   TokenPanel,
+  type FileDropAt,
 } from '@/editor'
 import { ImportDialog } from '@/io'
 import { RunningCommandsPanel } from '@/RunningCommandsPanel'
@@ -26,6 +28,15 @@ export default function App() {
   const doc = useStore(docStore, (s) => s.doc)
   const hist = useSyncExternalStore(history.subscribe, history.getState)
   const [importOpen, setImportOpen] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  // 画像ファイルをアセットとして配置(選択/ドロップ/貼り付け共通)
+  const addImages = (files: File[], at?: FileDropAt) => {
+    const page = doc.pages[0]
+    if (!page || files.length === 0) return
+    addImageFiles({ doc, page, history }, files, { blobs: blobStore, urls: assetUrls }, at).catch(
+      (e: unknown) => console.error(e),
+    )
+  }
   const ja = language === 'ja'
 
   useEffect(() => {
@@ -56,6 +67,20 @@ export default function App() {
         <button type="button" onClick={() => setImportOpen(true)}>
           {ja ? '取り込み' : 'Import'}
         </button>{' '}
+        <button type="button" onClick={() => fileRef.current?.click()}>
+          {ja ? '画像を追加' : 'Add image'}
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          hidden
+          onChange={(e) => {
+            addImages(Array.from(e.target.files ?? []))
+            e.target.value = ''
+          }}
+        />{' '}
         <button type="button" disabled={!hist.canUndo} onClick={() => history.undo()}>
           Undo{hist.undoName ? ` (${hist.undoName})` : ''}
         </button>{' '}
@@ -93,7 +118,7 @@ export default function App() {
         </aside>
         <div style={{ flex: 1, minWidth: 0 }}>
           <AssetUrlsContext.Provider value={assetUrls}>
-            <Canvas doc={doc} history={history} language={language} />
+            <Canvas doc={doc} history={history} language={language} onFiles={addImages} />
           </AssetUrlsContext.Provider>
         </div>
         <aside style={{ width: 300, flexShrink: 0 }}>

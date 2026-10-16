@@ -1,4 +1,12 @@
-import { newId, type Asset, type ImportInput, type ImportResult } from '@/core'
+import {
+  assetKindOfMime,
+  extFromMime,
+  mimeFromName,
+  newId,
+  type Asset,
+  type ImportInput,
+  type ImportResult,
+} from '@/core'
 import { logger } from '@/shared'
 import { sha256Hex } from './hash'
 import type { FetchFn } from './input'
@@ -19,50 +27,6 @@ export type ResolveOutput = { result: ImportResult; assetData: Map<string, Asset
 
 const DEFAULT_MAX_BYTES = 10 * 1024 * 1024
 const URL_RE = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)\s]*))\s*\)/gi
-
-const MIME_BY_EXT: Record<string, string> = {
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  gif: 'image/gif',
-  webp: 'image/webp',
-  avif: 'image/avif',
-  svg: 'image/svg+xml',
-  ico: 'image/x-icon',
-  woff: 'font/woff',
-  woff2: 'font/woff2',
-  ttf: 'font/ttf',
-  otf: 'font/otf',
-  mp4: 'video/mp4',
-  webm: 'video/webm',
-  mp3: 'audio/mpeg',
-  wav: 'audio/wav',
-}
-const EXT_BY_MIME: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/svg+xml': 'svg',
-  'image/x-icon': 'ico',
-  'audio/mpeg': 'mp3',
-  ...Object.fromEntries(
-    Object.entries(MIME_BY_EXT)
-      .filter(([e]) => e !== 'jpg' && e !== 'jpeg')
-      .map(([e, m]) => [m, e]),
-  ),
-}
-
-const mimeFromName = (name: string): string => {
-  const ext = /\.([a-z0-9]+)$/i.exec(name.split(/[?#]/)[0])?.[1]?.toLowerCase() ?? ''
-  return MIME_BY_EXT[ext] ?? 'application/octet-stream'
-}
-
-function kindOf(mime: string): Asset['kind'] {
-  if (mime === 'image/svg+xml') return 'svg'
-  if (mime.startsWith('image/')) return 'image'
-  if (mime.startsWith('font/') || /^application\/(x-)?font/.test(mime)) return 'font'
-  if (mime.startsWith('video/')) return 'video'
-  if (mime.startsWith('audio/')) return 'audio'
-  return 'other'
-}
 
 type Loaded = { mime: string; data: ArrayBuffer }
 
@@ -127,7 +91,7 @@ async function load(ref: string, o: ResolveOptions): Promise<Loaded | null> {
 }
 
 function assetName(ref: string, mime: string, hash: string): string {
-  const ext = EXT_BY_MIME[mime] ? `.${EXT_BY_MIME[mime]}` : ''
+  const ext = extFromMime(mime) ? `.${extFromMime(mime)}` : ''
   if (/^data:/i.test(ref)) return `inline-${hash.slice(0, 8)}${ext}`
   const seg = ref.split(/[?#]/)[0].split('/').filter(Boolean).pop()
   if (!seg) return `resource-${hash.slice(0, 8)}${ext}`
@@ -197,7 +161,7 @@ export async function resolveResources(
         byHash.set(hash, id)
         assets.push({
           id,
-          kind: kindOf(loaded.mime),
+          kind: assetKindOfMime(loaded.mime),
           name: assetName(ref, loaded.mime, hash),
           mime: loaded.mime,
           hash,

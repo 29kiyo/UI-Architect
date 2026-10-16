@@ -1,5 +1,6 @@
 import {
   AssetSchema,
+  dedupeAssets,
   NodeSchema,
   planMobile,
   deviceSize,
@@ -79,18 +80,8 @@ export function createImportCommand(result: ImportResult, options: CommitOptions
         if (page.nodes[n.id]) throw new Error(`node already exists: ${n.id}`)
       }
 
-      // Asset: 同じ hash が既にあればそちらへ寄せる
-      const known = new Map(draft.assets.map((a) => [a.hash, a.id]))
-      const remap = new Map<string, string>()
-      for (const a of result.assets) {
-        const existing = known.get(a.hash)
-        if (existing) {
-          if (existing !== a.id) remap.set(a.id, existing)
-          continue
-        }
-        draft.assets.push(AssetSchema.parse(a))
-        known.set(a.hash, a.id)
-      }
+      const { toAdd, remap } = dedupeAssets(draft.assets, result.assets)
+      for (const a of toAdd) draft.assets.push(AssetSchema.parse(a))
 
       const root = nodes[0]
       if (options.deviceId) root.props.custom.sourceDeviceId = options.deviceId

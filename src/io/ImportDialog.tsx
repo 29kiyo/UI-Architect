@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { deviceSize, type Device, type History, type ImportInput } from '@/core'
+import type { AssetData } from './resources'
 import { BeforeAfter, type RenderAfter } from './BeforeAfter'
 import { fromFiles, fromText, fromUrl } from './input'
 import { analyzeInputs, commitPrepared, outlineOf, prepareImport, type Prepared } from './prepare'
@@ -10,6 +11,8 @@ type Props = {
   devices: Device[]
   language: 'ja' | 'en'
   renderAfter: RenderAfter
+  // 確定の直前に呼ぶ。取り込んだバイナリの保存先(Phase 7)
+  onAssetData?: (data: Map<string, AssetData>) => Promise<void> | void
 }
 
 type PreviewState = {
@@ -78,7 +81,14 @@ const TEXT = {
 
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
-export function ImportDialog({ onClose, history, devices, language, renderAfter }: Props) {
+export function ImportDialog({
+  onClose,
+  history,
+  devices,
+  language,
+  renderAfter,
+  onAssetData,
+}: Props) {
   const t = TEXT[language]
   const [inputs, setInputs] = useState<ImportInput[]>([])
   const [pasteText, setPasteText] = useState('')
@@ -153,9 +163,12 @@ export function ImportDialog({ onClose, history, devices, language, renderAfter 
       })
       setPreview({ prepared, inputs, importerId: effectiveId, deviceId })
     })
-  const commit = () => {
+  const commit = async () => {
     if (!fresh) return
     try {
+      if (onAssetData && fresh.prepared.assetData.size > 0) {
+        await onAssetData(fresh.prepared.assetData)
+      }
       commitPrepared(history, fresh.prepared, {
         ...(deviceId ? { deviceId } : {}),
         ...(mobileId && mobileId !== deviceId ? { mobileDeviceId: mobileId } : {}),

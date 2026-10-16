@@ -102,3 +102,4 @@ export {
 export { TokenPanel, TokenPicker, tokenKindFor } from './inspector'
 export { StatePanel, createStateStyleCommand, STATE_NAMES, stateStyleOf } from './inspector'
 export { setStatePreview, previewStateFor } from './canvas/statePreview'
+export { AssetUrlsContext } from './canvas/assetUrlsContext'

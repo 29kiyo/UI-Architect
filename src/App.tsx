@@ -1,7 +1,9 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useStore } from 'zustand'
-import { docStore, history } from '@/appSession'
+import { assetUrls, blobStore, docStore, history } from '@/appSession'
+import { putBlobs } from '@/core'
 import {
+  AssetUrlsContext,
   BenchButton,
   Canvas,
   Inspector,
@@ -29,6 +31,14 @@ export default function App() {
   useEffect(() => {
     applySettingsToElement(document.documentElement, { theme, language })
   }, [theme, language])
+
+  // ドキュメントのアセットを IndexedDB から読み、描画用 Blob URL にする
+  useEffect(() => {
+    void assetUrls.loadMany(
+      doc.assets.map((a) => a.id),
+      blobStore,
+    )
+  }, [doc.assets])
 
   useEffect(() => {
     logger.setLevel(logLevel)
@@ -69,6 +79,10 @@ export default function App() {
           history={history}
           devices={doc.devices}
           language={language}
+          onAssetData={async (data) => {
+            await putBlobs(blobStore, data)
+            for (const [id, b] of data) assetUrls.set(id, b)
+          }}
           renderAfter={(nodes, w, h) => <NodesPreview nodes={nodes} width={w} height={h} />}
         />
       )}
@@ -78,7 +92,9 @@ export default function App() {
           <LayerPanel doc={doc} history={history} language={language} />
         </aside>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <Canvas doc={doc} history={history} language={language} />
+          <AssetUrlsContext.Provider value={assetUrls}>
+            <Canvas doc={doc} history={history} language={language} />
+          </AssetUrlsContext.Provider>
         </div>
         <aside style={{ width: 300, flexShrink: 0 }}>
           <Inspector doc={doc} history={history} language={language} />

@@ -176,6 +176,17 @@ export const BUILTIN_PROPS: PropDef[] = [
   text('appearance', 'backgroundImage', '背景画像/グラデーション', 'Background image'),
   text('appearance', 'backgroundSize', '背景サイズ', 'Background size'),
   text('appearance', 'backgroundPosition', '背景位置', 'Background position'),
+  sel(
+    'appearance',
+    'objectFit',
+    '画像のフィット',
+    'Image fit',
+    ['fill', 'cover', 'contain', 'none', 'scale-down'],
+    {
+      appliesTo: IMG,
+    },
+  ),
+  text('appearance', 'objectPosition', '画像の位置', 'Image position', { appliesTo: IMG }),
   sel('appearance', 'backgroundRepeat', '背景の繰り返し', 'Background repeat', [
     'repeat',
     'no-repeat',

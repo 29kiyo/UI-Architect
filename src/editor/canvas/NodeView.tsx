@@ -6,12 +6,14 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
-import { orderChildren, resolveProps } from '@/core'
+import { orderChildren, resolveAssetSrc, resolveProps } from '@/core'
 import type { Node, Page } from '@/core'
+import { AssetUrlsContext } from './assetUrlsContext'
 import { previewStateFor, statePreview } from './statePreview'
 import { nodeStyle } from './style'
 
 const MAX_DEPTH = 200
+const NO_URLS = { get: () => undefined }
 const PLACEHOLDER = '#e5e5e5'
 // SVG は <img> 経由で描画する(キャンバス内でスクリプトを実行させない)
 const svgDataUrl = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
@@ -57,6 +59,12 @@ const NodeViewInner = memo(function NodeViewInner({ nodeId, deviceId, depth }: P
   )
   // 状態プレビュー(選択ノードにだけ値が入る。他のノードは undefined のまま再描画されない)
   const previewState = useSyncExternalStore(statePreview.subscribe, () => previewStateFor(nodeId))
+  // asset:<id> は Blob URL に解決(読み込み完了で再描画)
+  const assetUrls = useContext(AssetUrlsContext)
+  const rawSrc = node?.props.content.src
+  const resolvedSrc = useSyncExternalStore(assetUrls?.subscribe ?? noopSubscribe, () =>
+    resolveAssetSrc(rawSrc, assetUrls ?? NO_URLS),
+  )
   if (!node || depth > MAX_DEPTH) return null
   // override が無ければ共有ノードをそのまま使う
   const n: Node = override
@@ -78,7 +86,7 @@ const NodeViewInner = memo(function NodeViewInner({ nodeId, deviceId, depth }: P
     )
   }
   if (n.type === 'image') {
-    const src = typeof c.src === 'string' && c.src.startsWith('data:') ? c.src : undefined
+    const src = resolvedSrc
     return src ? (
       <img
         data-node-id={n.id}

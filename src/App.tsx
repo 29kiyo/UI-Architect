@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useStore } from 'zustand'
 import { assetUrls, blobStore, docStore, fontLoader, history } from '@/appSession'
-import { putBlobs } from '@/core'
+import { openProjectZip, putBlobs, replaceDocument, saveProjectZip } from '@/core'
 import {
   addFiles,
   addFontFiles,
+  AssetPanel,
   AssetUrlsContext,
   BenchButton,
   Canvas,
@@ -48,6 +49,29 @@ export default function App() {
     )
   }
   const ja = language === 'ja'
+
+  // プロジェクトを zip で保存 / 開く(従来の JSON も開ける)
+  const saveZip = () => {
+    saveProjectZip(docStore.getState().doc, blobStore)
+      .then((r) => r.warnings.length > 0 && window.alert(r.warnings.join('\n')))
+      .catch((e: unknown) => {
+        if (!(e instanceof DOMException && e.name === 'AbortError')) console.error(e)
+      })
+  }
+  const openZip = () => {
+    openProjectZip()
+      .then(async (p) => {
+        await putBlobs(blobStore, p.assetData)
+        assetUrls.clear()
+        replaceDocument(docStore, history, p.doc)
+        if (p.warnings.length > 0) window.alert(p.warnings.join('\n'))
+      })
+      .catch((e: unknown) => {
+        if (e instanceof DOMException && e.name === 'AbortError') return
+        console.error(e)
+        window.alert(e instanceof Error ? e.message : String(e))
+      })
+  }
 
   useEffect(() => {
     applySettingsToElement(document.documentElement, { theme, language })
@@ -106,6 +130,12 @@ export default function App() {
             e.target.value = ''
           }}
         />{' '}
+        <button type="button" onClick={saveZip}>
+          {ja ? '保存(zip)' : 'Save (zip)'}
+        </button>{' '}
+        <button type="button" onClick={openZip}>
+          {ja ? '開く' : 'Open'}
+        </button>{' '}
         <button type="button" disabled={!hist.canUndo} onClick={() => history.undo()}>
           Undo{hist.undoName ? ` (${hist.undoName})` : ''}
         </button>{' '}
@@ -140,6 +170,18 @@ export default function App() {
         <aside style={{ width: 240, flexShrink: 0, textAlign: 'left' }}>
           <Palette language={language} />
           <LayerPanel doc={doc} history={history} language={language} />
+          <AssetPanel
+            doc={doc}
+            history={history}
+            urls={assetUrls}
+            language={language}
+            onRemoved={(ids) => {
+              for (const id of ids) {
+                assetUrls.revoke(id)
+                void blobStore.delete(id)
+              }
+            }}
+          />
         </aside>
         <div style={{ flex: 1, minWidth: 0 }}>
           <AssetUrlsContext.Provider value={assetUrls}>
@@ -158,6 +200,7 @@ export default function App() {
         </aside>
       </div>
       <SettingsPanel />
+      {showRunningCommands && <div aria-hidden style={{ height: '32vh' }} />}
       {showRunningCommands && (
         <RunningCommandsPanel title={language === 'ja' ? '実行ログ' : 'Running commands'} />
       )}

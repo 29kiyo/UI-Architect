@@ -107,3 +107,4 @@ export { addImageFiles, createAddImagesCommand, imageFilesOf } from './canvas/im
 export type { FileDropAt, ImageItem, ImageSinks } from './canvas/imageActions'
 export { addFiles, addSvgFiles, isSvgFile } from './canvas/svgActions'
 export { addFontFiles, isFontFile } from './canvas/fontActions'
+export { AssetPanel } from './canvas/AssetPanel'

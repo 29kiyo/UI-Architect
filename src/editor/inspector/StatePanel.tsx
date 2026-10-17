@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { History, UIDocument } from '@/core'
+import { findEditablePage, type History, type UIDocument } from '@/core'
 import { isBaseDevice } from '../canvas/commands'
 import { useSelection } from '../canvas/selection'
 import { setStatePreview } from '../canvas/statePreview'
@@ -63,7 +63,7 @@ export function StatePanel({ doc, history, pageId, language }: Props) {
   const [state, setState] = useState<StateName | ''>('')
   const selectedIds = useSelection((s) => s.selectedIds)
   const activeDeviceId = useSelection((s) => s.activeDeviceId)
-  const page = doc.pages.find((p) => p.id === pageId) ?? doc.pages[0]
+  const page = findEditablePage(doc, pageId) ?? doc.pages[0]
   const deviceId = activeDeviceId ?? doc.devices[0]?.id
   const nodes = page && deviceId ? resolveSelected(page, deviceId, selectedIds) : []
   const idsKey = nodes.map((n) => n.id).join(',')

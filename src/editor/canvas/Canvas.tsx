@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { resolveNode, type History, type UIDocument } from '@/core'
+import { findEditablePage, resolveNode, splitMasters, type History, type UIDocument } from '@/core'
 import { frameFor, layoutArtboards, safeBands, unionRect } from './artboard'
 import { AlignBar } from './AlignBar'
 import { buildPaletteCommands, type PaletteCommand } from './commandList'
@@ -8,6 +8,7 @@ import { useEditorShortcuts } from './useEditorShortcuts'
 import { DeviceBar } from './DeviceBar'
 import { CanvasOverlay } from './CanvasOverlay'
 import { Ruler } from './Ruler'
+import { MasterLayer } from './MasterLayer'
 import { NodeView } from './NodeView'
 import { tokenStyle } from './tokenVars'
 import { hitFromElement, measureWorldRect } from './hit'
@@ -97,7 +98,8 @@ export function Canvas({ doc, history, pageId, language, height = '70vh', onFile
     selected: [],
   })
 
-  const page = doc.pages.find((p) => p.id === pageId) ?? doc.pages[0]
+  const page = findEditablePage(doc, pageId) ?? doc.pages[0]
+  const slots = page ? splitMasters(doc, page) : undefined
   // 座標は全デバイスで計算し、描画だけ絞る(スナップ等の座標計算と一致させる)
   const allArtboards = useMemo(() => layoutArtboards(doc.devices), [doc.devices])
   const artboards = useMemo(
@@ -558,7 +560,31 @@ export function Canvas({ doc, history, pageId, language, height = '70vh', onFile
                         : '0 2px 12px rgba(0,0,0,0.25)',
                   }}
                 >
-                  <NodeView page={page} deviceId={a.deviceId} nodeId={page.rootNodeId} />
+                  {slots && (slots.top.length > 0 || slots.bottom.length > 0) ? (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '100%',
+                        height: '100%',
+                      }}
+                    >
+                      {slots.top.map((m) => (
+                        <MasterLayer key={m.id} master={m} deviceId={a.deviceId} flow />
+                      ))}
+                      <div style={{ position: 'relative', flex: '1 1 0', minHeight: 0 }}>
+                        <NodeView page={page} deviceId={a.deviceId} nodeId={page.rootNodeId} />
+                      </div>
+                      {slots.bottom.map((m) => (
+                        <MasterLayer key={m.id} master={m} deviceId={a.deviceId} flow />
+                      ))}
+                    </div>
+                  ) : (
+                    <NodeView page={page} deviceId={a.deviceId} nodeId={page.rootNodeId} />
+                  )}
+                  {slots?.overlay.map((m) => (
+                    <MasterLayer key={m.id} master={m} deviceId={a.deviceId} />
+                  ))}
                 </div>
               </div>
             ))}

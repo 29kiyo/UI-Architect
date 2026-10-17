@@ -1,4 +1,10 @@
-import { PROP_GROUP_KEYS, type History, type Props as NodeProps, type UIDocument } from '@/core'
+import {
+  PROP_GROUP_KEYS,
+  findEditablePage,
+  type History,
+  type Props as NodeProps,
+  type UIDocument,
+} from '@/core'
 import { createPropsCommand, isBaseDevice } from '../canvas/commands'
 import { createAddAssetCommand, prepareImageAsset, type ImageSinks } from '../canvas/imageActions'
 import { AssetPicker } from './AssetPicker'
@@ -80,7 +86,7 @@ export function Inspector({ doc, history, pageId, language, sinks }: Props) {
   const t = TEXT[language]
   const selectedIds = useSelection((s) => s.selectedIds)
   const activeDeviceId = useSelection((s) => s.activeDeviceId)
-  const page = doc.pages.find((p) => p.id === pageId) ?? doc.pages[0]
+  const page = findEditablePage(doc, pageId) ?? doc.pages[0]
   const deviceId = activeDeviceId ?? doc.devices[0]?.id
   const nodes = page && deviceId ? resolveSelected(page, deviceId, selectedIds) : []
   const first = nodes[0]

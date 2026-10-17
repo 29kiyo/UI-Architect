@@ -1,5 +1,5 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import type { History, Id, UIDocument } from '@/core'
+import { findEditablePage, type History, type Id, type UIDocument } from '@/core'
 import { isBaseDevice } from './commands'
 import { buildRows, dropPosition, resolveDrop, type DropPos } from './layers'
 import { createMoveToCommand, createNodeMetaCommand } from './nodeCommands'
@@ -36,7 +36,7 @@ const TEXT = {
 
 export function LayerPanel({ doc, history, pageId, language }: Props) {
   const t = TEXT[language]
-  const page = doc.pages.find((p) => p.id === pageId) ?? doc.pages[0]
+  const page = findEditablePage(doc, pageId) ?? doc.pages[0]
   const selectedIds = useSelection((s) => s.selectedIds)
   const activeDeviceId = useSelection((s) => s.activeDeviceId)
   const deviceId = activeDeviceId ?? doc.devices[0]?.id

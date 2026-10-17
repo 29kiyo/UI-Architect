@@ -1,3 +1,4 @@
+import { allPages } from '../master'
 import type { Asset, UIDocument } from '../model'
 
 export type AssetUsage = {
@@ -42,7 +43,7 @@ export function findAssetUsages(doc: UIDocument): AssetUsage[] {
   const add = (hits: Hit[], base: Omit<AssetUsage, 'assetId' | 'path'>) => {
     for (const h of hits) usages.push({ assetId: h.id, path: h.path, ...base })
   }
-  for (const page of doc.pages) {
+  for (const page of allPages(doc)) {
     for (const [nodeId, node] of Object.entries(page.nodes)) {
       const hits: Hit[] = []
       scan(node.props, '', hits)

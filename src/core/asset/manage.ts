@@ -1,3 +1,4 @@
+import { allPages } from '../master'
 import type { Command } from '../history'
 import type { Asset, UIDocument } from '../model'
 import { fontFamilyOf } from './font'
@@ -42,7 +43,7 @@ export function replaceAssetRefs(doc: UIDocument, fromId: string, toId: string):
   const re = new RegExp(`asset:${escapeRe(fromId)}(?![^"')\\s])`, 'g')
   const to = `asset:${toId}`
   const c = { n: 0 }
-  for (const page of doc.pages) {
+  for (const page of allPages(doc)) {
     for (const node of Object.values(page.nodes)) replaceIn(node.props, re, to, c)
     for (const byNode of Object.values(page.overrides ?? {})) replaceIn(byNode, re, to, c)
   }

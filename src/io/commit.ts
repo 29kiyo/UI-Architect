@@ -1,4 +1,5 @@
 import {
+  allPages,
   AssetSchema,
   dedupeAssets,
   NodeSchema,
@@ -68,7 +69,7 @@ export function createImportCommand(result: ImportResult, options: CommitOptions
     name: `import: ${label}`,
     apply(draft) {
       const page = options.pageId
-        ? draft.pages.find((p) => p.id === options.pageId)
+        ? allPages(draft).find((p) => p.id === options.pageId)
         : draft.pages[0]
       if (!page) throw new Error('取り込み先のページが見つかりません')
       const parent = page.nodes[options.parentId ?? page.rootNodeId]

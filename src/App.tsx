@@ -20,6 +20,7 @@ import {
   ComponentsContext,
   InstancePanel,
   InstanceExtras,
+  NavMenuPanel,
   DefinitionPanel,
   Inspector,
   LayerPanel,
@@ -257,6 +258,7 @@ export default function App() {
             onEditDef={setPageId}
           />
           <InstanceExtras doc={doc} history={history} pageId={pageId} language={language} />
+          <NavMenuPanel doc={doc} history={history} pageId={pageId} language={language} />
           <DefinitionPanel doc={doc} history={history} pageId={pageId} language={language} />
           <StatePanel doc={doc} history={history} pageId={pageId} language={language} />
           <TokenPanel tokens={doc.tokens} history={history} language={language} />

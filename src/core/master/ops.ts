@@ -108,3 +108,13 @@ export const createSetMasterHiddenCommand = (
 export function allPages(doc: Pick<UIDocument, 'pages' | 'masters'>): Page[] {
   return [...doc.pages, ...doc.masters]
 }
+
+export type MasterSlots = { top: Master[]; bottom: Master[]; overlay: Master[] }
+
+// ページに合成するマスターを位置別に分ける(マスター編集中は合成しない)
+export function splitMasters(doc: UIDocument, page: Page): MasterSlots {
+  const out: MasterSlots = { top: [], bottom: [], overlay: [] }
+  if (doc.masters.some((m) => m.id === page.id)) return out
+  for (const m of visibleMasters(doc, page)) out[m.position].push(m)
+  return out
+}

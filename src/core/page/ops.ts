@@ -90,6 +90,7 @@ export const createRemovePageCommand = (pageId: Id): Command => ({
     if (d.pages.length <= 1) throw new Error('最後のページは削除できません')
     d.pages.splice(indexOfPage(d, pageId), 1)
     d.variables = d.variables.filter((v) => !(v.scope === 'page' && v.ownerId === pageId))
+    d.components = d.components.filter((c) => !(c.scope === 'page' && c.ownerId === pageId))
     if (d.project.homePageId === pageId) delete d.project.homePageId
   },
 })

@@ -1,3 +1,4 @@
+import { allPages } from '../master'
 import {
   newId,
   type ComponentDef,
@@ -41,7 +42,7 @@ function getDef(doc: UIDocument, componentId: Id): ComponentDef {
 }
 
 function getInstance(doc: UIDocument, pageId: Id, instanceId: Id) {
-  const page = doc.pages.find((p) => p.id === pageId)
+  const page = allPages(doc).find((p) => p.id === pageId)
   if (!page) throw new Error(`page not found: ${pageId}`)
   const node = requireNode(page, instanceId)
   const ref = node.componentRef

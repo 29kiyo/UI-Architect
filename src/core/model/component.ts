@@ -22,9 +22,13 @@ export const ComponentDefSchema = z
     nodes: z.record(IdSchema, NodeSchema),
     variants: z.array(ComponentVariantSchema).default([]),
     slots: z.array(ComponentSlotSchema).default([]),
+    // 未指定は project。page のときは ownerId(ページ or マスターの ID)専用
+    scope: z.enum(['project', 'page']).optional(),
+    ownerId: IdSchema.optional(),
   })
   .superRefine((def, ctx) => {
     const issue = (message: string) => ctx.addIssue({ code: 'custom', message })
+    if (def.scope === 'page' && !def.ownerId) issue('page scope needs ownerId')
     if (!def.nodes[def.rootNodeId]) issue(`rootNodeId not found: ${def.rootNodeId}`)
     for (const [key, node] of Object.entries(def.nodes)) {
       if (key !== node.id) issue(`node key/id mismatch: ${key} / ${node.id}`)

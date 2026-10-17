@@ -1,4 +1,4 @@
-import type { Id, InstanceOverride, Node, UIDocument } from '../model'
+import type { Id, InstanceOverride, Node, Props, UIDocument } from '../model'
 import { resolveProps } from '../device'
 
 export type ResolvedInstance = {
@@ -40,4 +40,13 @@ export function resolveInstance(doc: UIDocument, instance: Node): ResolvedInstan
     nodes[id] = node
   }
   return { rootNodeId: def.rootNodeId, nodes }
+}
+
+// インスタンスノード自身が持つ props(配置・サイズ・変形)。定義ルートの値より優先する
+export const INSTANCE_OWN_GROUPS = ['position', 'size', 'transform'] as const
+
+export function mergeInstanceProps(rootProps: Props, instProps: Props): Props {
+  const out: Props = { ...rootProps }
+  for (const g of INSTANCE_OWN_GROUPS) out[g] = { ...rootProps[g], ...instProps[g] }
+  return out
 }

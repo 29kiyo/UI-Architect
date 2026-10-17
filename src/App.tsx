@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useStore } from 'zustand'
 import { assetUrls, blobStore, docStore, fontLoader, history } from '@/appSession'
-import { getHomePage, openProjectZip, putBlobs, replaceDocument, saveProjectZip } from '@/core'
+import {
+  getHomePage,
+  openProjectZip,
+  putBlobs,
+  replaceDocument,
+  saveProjectZip,
+  findEditablePage,
+} from '@/core'
 import {
   addFiles,
   addFontFiles,
@@ -12,6 +19,7 @@ import {
   Inspector,
   LayerPanel,
   NodesPreview,
+  MasterPanel,
   PagePanel,
   Palette,
   selectionStore,
@@ -33,7 +41,7 @@ export default function App() {
   const hist = useSyncExternalStore(history.subscribe, history.getState)
   const [importOpen, setImportOpen] = useState(false)
   const [pageIdState, setPageId] = useState<string | undefined>(undefined)
-  const page = doc.pages.find((p) => p.id === pageIdState) ?? getHomePage(doc)
+  const page = findEditablePage(doc, pageIdState) ?? getHomePage(doc)
   const pageId = page?.id
   const fileRef = useRef<HTMLInputElement>(null)
   const fontRef = useRef<HTMLInputElement>(null)
@@ -179,6 +187,13 @@ export default function App() {
         <aside style={{ width: 240, flexShrink: 0, textAlign: 'left' }}>
           <Palette language={language} />
           <PagePanel
+            doc={doc}
+            history={history}
+            pageId={pageId}
+            language={language}
+            onSelect={setPageId}
+          />
+          <MasterPanel
             doc={doc}
             history={history}
             pageId={pageId}

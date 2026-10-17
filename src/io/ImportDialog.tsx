@@ -9,6 +9,8 @@ type Props = {
   onClose: () => void
   history: History
   devices: Device[]
+  // 取り込み先ページ(省略時は最初のページ)
+  pageId?: string | undefined
   language: 'ja' | 'en'
   renderAfter: RenderAfter
   // 確定の直前に呼ぶ。取り込んだバイナリの保存先(Phase 7)
@@ -85,6 +87,7 @@ export function ImportDialog({
   onClose,
   history,
   devices,
+  pageId,
   language,
   renderAfter,
   onAssetData,
@@ -170,6 +173,7 @@ export function ImportDialog({
         await onAssetData(fresh.prepared.assetData)
       }
       commitPrepared(history, fresh.prepared, {
+        ...(pageId ? { pageId } : {}),
         ...(deviceId ? { deviceId } : {}),
         ...(mobileId && mobileId !== deviceId ? { mobileDeviceId: mobileId } : {}),
       })

@@ -166,6 +166,7 @@ export default function App() {
           onClose={() => setImportOpen(false)}
           history={history}
           devices={doc.devices}
+          pageId={pageId}
           language={language}
           onAssetData={async (data) => {
             await putBlobs(blobStore, data)

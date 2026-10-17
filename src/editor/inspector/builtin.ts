@@ -70,6 +70,25 @@ const OFFSET_U = ['px', '%', 'rem', 'em', 'auto']
 const FONT_U = ['px', 'rem', 'em', '%']
 const LH_U = ['px', 'rem', 'em', '%', 'normal']
 const TIME_U = ['s', 'ms']
+// リンク先を付けられるカテゴリ
+const LINKABLE = [
+  'link',
+  'button',
+  'card',
+  'list-item',
+  'nav',
+  'tabs',
+  'image',
+  'icon',
+  'text-heading',
+  'text-body',
+  'label',
+  'container',
+  'section',
+  'header',
+  'footer',
+]
+
 const IMG = ['image', 'icon']
 const TEXT_IN = ['input-text', 'textarea']
 
@@ -317,7 +336,7 @@ export const BUILTIN_PROPS: PropDef[] = [
   text('content', 'src', '画像URL', 'Source', { appliesTo: IMG, deviceOverridable: false }),
   text('content', 'alt', '代替テキスト', 'Alt text', { appliesTo: IMG, deviceOverridable: false }),
   text('content', 'href', 'リンク先', 'Link target', {
-    appliesTo: ['link'],
+    appliesTo: LINKABLE,
     deviceOverridable: false,
   }),
   text('content', 'placeholder', 'プレースホルダー', 'Placeholder', {

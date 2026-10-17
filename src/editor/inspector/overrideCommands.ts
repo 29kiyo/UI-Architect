@@ -1,5 +1,5 @@
 import {
-  allPages,
+  editablePages,
   attachNode,
   detachNode,
   getOverride,
@@ -41,7 +41,7 @@ export function createResetPropCommand(t: Target, group: keyof Props, key: strin
   return {
     name: 'reset override',
     apply: (draft) => {
-      resetOverrideProp(findPage(allPages(draft), t.pageId), t.deviceId, t.nodeId, group, key)
+      resetOverrideProp(findPage(editablePages(draft), t.pageId), t.deviceId, t.nodeId, group, key)
     },
   }
 }
@@ -50,7 +50,7 @@ export function createDetachCommand(t: Target): Command {
   return {
     name: 'detach',
     apply: (draft) => {
-      detachNode(findPage(allPages(draft), t.pageId), t.deviceId, t.nodeId)
+      detachNode(findPage(editablePages(draft), t.pageId), t.deviceId, t.nodeId)
     },
   }
 }
@@ -59,7 +59,7 @@ export function createAttachCommand(t: Target): Command {
   return {
     name: 'attach',
     apply: (draft) => {
-      attachNode(findPage(allPages(draft), t.pageId), t.deviceId, t.nodeId)
+      attachNode(findPage(editablePages(draft), t.pageId), t.deviceId, t.nodeId)
     },
   }
 }

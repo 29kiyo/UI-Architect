@@ -1,6 +1,6 @@
 import {
   addNode,
-  allPages,
+  editablePages,
   getParentId,
   moveNode,
   requireNode,
@@ -17,7 +17,7 @@ export const createAddNodeCommand = (
   index?: number,
 ): Command => ({
   name: 'add-node',
-  apply: (d) => addNode(findPage(allPages(d), pageId), node, parentId, index),
+  apply: (d) => addNode(findPage(editablePages(d), pageId), node, parentId, index),
 })
 
 export type MoveToOptions = {
@@ -34,7 +34,7 @@ export function createMoveToCommand(o: MoveToOptions): Command {
   return {
     name: 'move-node',
     apply: (d) => {
-      const page = findPage(allPages(d), o.pageId)
+      const page = findPage(editablePages(d), o.pageId)
       if (getParentId(page, o.nodeId) === o.parentId) {
         createReorderCommand(o).apply(d)
         return
@@ -56,7 +56,7 @@ export const createNodeMetaCommand = (
 ): Command => ({
   name: label,
   apply: (d) => {
-    const n = requireNode(findPage(allPages(d), pageId), id)
+    const n = requireNode(findPage(editablePages(d), pageId), id)
     if (patch.name !== undefined) n.name = patch.name
     if (patch.hidden !== undefined) n.hidden = patch.hidden
     if (patch.locked !== undefined) n.locked = patch.locked

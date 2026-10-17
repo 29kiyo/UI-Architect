@@ -22,6 +22,7 @@ export function createComponentDef(name: string): ComponentDef {
     name,
     rootNodeId: root.id,
     nodes: { [root.id]: root },
+    overrides: {},
     variants: [],
     slots: [],
   }

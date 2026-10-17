@@ -75,6 +75,7 @@ export function createComponentFromNodeCommand(o: FromNodeOptions): Command {
         name: o.name.trim() || name,
         rootNodeId: o.nodeId,
         nodes,
+        overrides: {},
         variants: [],
         slots: [],
         scope: o.scope,

@@ -18,6 +18,7 @@ import {
   Canvas,
   ComponentPanel,
   ComponentsContext,
+  InstancePanel,
   Inspector,
   LayerPanel,
   NodesPreview,
@@ -202,7 +203,14 @@ export default function App() {
             language={language}
             onSelect={setPageId}
           />
-          <ComponentPanel doc={doc} history={history} pageId={pageId} language={language} />
+          <ComponentPanel
+            doc={doc}
+            history={history}
+            pageId={pageId}
+            language={language}
+            onEdit={setPageId}
+            onBack={() => setPageId(undefined)}
+          />
           <LayerPanel doc={doc} history={history} pageId={pageId} language={language} />
           <AssetPanel
             doc={doc}
@@ -238,6 +246,13 @@ export default function App() {
             language={language}
             pageId={pageId}
             sinks={{ blobs: blobStore, urls: assetUrls }}
+          />
+          <InstancePanel
+            doc={doc}
+            history={history}
+            pageId={pageId}
+            language={language}
+            onEditDef={setPageId}
           />
           <StatePanel doc={doc} history={history} pageId={pageId} language={language} />
           <TokenPanel tokens={doc.tokens} history={history} language={language} />

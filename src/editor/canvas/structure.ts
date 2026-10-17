@@ -1,5 +1,5 @@
 import {
-  allPages,
+  editablePages,
   copySubtrees,
   deleteNodes,
   duplicateNodes,
@@ -30,7 +30,7 @@ export function createDuplicateCommand(pageId: Id, ids: Id[]): WithCreated {
       name: 'duplicate',
       apply: (d) => {
         created.length = 0
-        created.push(...duplicateNodes(findPage(allPages(d), pageId), ids))
+        created.push(...duplicateNodes(findPage(editablePages(d), pageId), ids))
       },
     },
   }
@@ -49,7 +49,7 @@ export function createPasteCommand(
       name: 'paste',
       apply: (d) => {
         created.length = 0
-        created.push(...pasteClipboard(findPage(allPages(d), pageId), clip, parentId, index))
+        created.push(...pasteClipboard(findPage(editablePages(d), pageId), clip, parentId, index))
       },
     },
   }
@@ -57,7 +57,7 @@ export function createPasteCommand(
 
 export const createDeleteCommand = (pageId: Id, ids: Id[]): Command => ({
   name: 'delete',
-  apply: (d) => void deleteNodes(findPage(allPages(d), pageId), ids),
+  apply: (d) => void deleteNodes(findPage(editablePages(d), pageId), ids),
 })
 
 export function createGroupCommand(pageId: Id, ids: Id[]): WithCreated {
@@ -68,7 +68,7 @@ export function createGroupCommand(pageId: Id, ids: Id[]): WithCreated {
       name: 'group',
       apply: (d) => {
         created.length = 0
-        created.push(groupNodes(findPage(allPages(d), pageId), ids))
+        created.push(groupNodes(findPage(editablePages(d), pageId), ids))
       },
     },
   }
@@ -76,7 +76,7 @@ export function createGroupCommand(pageId: Id, ids: Id[]): WithCreated {
 
 export const createUngroupCommand = (pageId: Id, id: Id): Command => ({
   name: 'ungroup',
-  apply: (d) => void ungroupNode(findPage(allPages(d), pageId), id),
+  apply: (d) => void ungroupNode(findPage(editablePages(d), pageId), id),
 })
 
 type ZOptions = {
@@ -93,7 +93,7 @@ export function createZOrderCommand(o: ZOptions): Command {
   return {
     name: 'z-order',
     apply: (d) => {
-      const page: Page = findPage(allPages(d), o.pageId)
+      const page: Page = findPage(editablePages(d), o.pageId)
       const parent = requireNode(page, o.parentId)
       const ov = getOverride(page, o.deviceId, o.parentId)
       const current = [...orderChildren(parent.children, ov?.order)]

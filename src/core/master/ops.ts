@@ -10,7 +10,11 @@ import {
 
 // ページ or マスターを ID で探す(編集 UI は両方を同じように扱う)
 export function findEditablePage(doc: UIDocument, id: Id | undefined): Page | undefined {
-  return doc.pages.find((p) => p.id === id) ?? doc.masters.find((m) => m.id === id)
+  return (
+    doc.pages.find((p) => p.id === id) ??
+    doc.masters.find((m) => m.id === id) ??
+    (doc.components.find((c) => c.id === id) as unknown as Page | undefined)
+  )
 }
 
 // このページに表示するマスター(hiddenMasterIds に入っていないもの)
@@ -114,7 +118,15 @@ export type MasterSlots = { top: Master[]; bottom: Master[]; overlay: Master[] }
 // ページに合成するマスターを位置別に分ける(マスター編集中は合成しない)
 export function splitMasters(doc: UIDocument, page: Page): MasterSlots {
   const out: MasterSlots = { top: [], bottom: [], overlay: [] }
-  if (doc.masters.some((m) => m.id === page.id)) return out
+  if (doc.masters.some((m) => m.id === page.id) || doc.components.some((c) => c.id === page.id)) {
+    return out
+  }
   for (const m of visibleMasters(doc, page)) out[m.position].push(m)
   return out
+}
+
+// 編集系 Command が対象を探すための一覧(ページ + マスター + コンポーネント定義)
+// 定義は overrides を持つので Page と同じ形で扱える。アセット走査には使わない(二重に数えるため)
+export function editablePages(doc: Pick<UIDocument, 'pages' | 'masters' | 'components'>): Page[] {
+  return [...doc.pages, ...doc.masters, ...(doc.components as unknown as Page[])]
 }

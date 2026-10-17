@@ -1,5 +1,5 @@
 import {
-  allPages,
+  editablePages,
   getOverride,
   orderChildren,
   requireNode,
@@ -49,7 +49,7 @@ export function createPropsCommand(o: PropsCommandOptions): Command {
     name: o.name,
     ...(o.coalesceKey ? { coalesceKey: o.coalesceKey } : {}),
     apply: (draft) => {
-      const page = findPage(allPages(draft), o.pageId)
+      const page = findPage(editablePages(draft), o.pageId)
       for (const w of o.writes) writeProp(page, o.deviceId, o.base, w)
     },
   }
@@ -68,7 +68,7 @@ export function createReorderCommand(o: ReorderOptions): Command {
   return {
     name: 'reorder',
     apply: (draft) => {
-      const page = findPage(allPages(draft), o.pageId)
+      const page = findPage(editablePages(draft), o.pageId)
       const parent = requireNode(page, o.parentId)
       const ov = getOverride(page, o.deviceId, o.parentId)
       const current = [...orderChildren(parent.children, ov?.order)]

@@ -21,6 +21,8 @@ type Props = {
   history: History
   pageId: string | undefined
   language: 'ja' | 'en'
+  onEdit: (componentId: string) => void
+  onBack: () => void
 }
 
 const TEXT = {
@@ -30,6 +32,9 @@ const TEXT = {
     name: '名前(空なら要素名)',
     scope: { project: 'プロジェクト全体', page: 'このページ専用' },
     place: '配置',
+    edit: '編集',
+    editingDef: (n: string) => `定義を編集中: ${n}`,
+    back: 'ページに戻る',
     del: '削除',
     detach: '選択のインスタンスを解除',
     used: (n: number) => `使用 ${n}`,
@@ -49,6 +54,9 @@ const TEXT = {
     name: 'Name (blank = node name)',
     scope: { project: 'Whole project', page: 'This page only' },
     place: 'Place',
+    edit: 'Edit',
+    editingDef: (n: string) => `Editing definition: ${n}`,
+    back: 'Back to page',
     del: 'Delete',
     detach: 'Detach selected instance',
     used: (n: number) => `Used ${n}`,
@@ -64,14 +72,21 @@ const TEXT = {
   },
 }
 
-export function ComponentPanel({ doc, history, pageId, language }: Props) {
+export function ComponentPanel({ doc, history, pageId, language, onEdit, onBack }: Props) {
   const t = TEXT[language]
   const [name, setName] = useState('')
   const [scope, setScope] = useState<'project' | 'page'>('project')
   const selectedIds = useSelection((s) => s.selectedIds)
   const activeDeviceId = useSelection((s) => s.activeDeviceId)
-  const page = findEditablePage(doc, pageId)
-  const list = componentsForPage(doc, pageId)
+  // 定義の編集中は、配置・コンポーネント化は使えない(ページが無い)
+  const editingDef = doc.components.find((c) => c.id === pageId)
+  const page = editingDef ? undefined : findEditablePage(doc, pageId)
+  const ownerPageId = editingDef
+    ? editingDef.scope === 'page'
+      ? editingDef.ownerId
+      : undefined
+    : pageId
+  const list = componentsForPage(doc, ownerPageId)
 
   const only = selectedIds.length === 1 ? selectedIds[0] : undefined
   const selNode = page && only ? page.nodes[only] : undefined
@@ -106,6 +121,14 @@ export function ComponentPanel({ doc, history, pageId, language }: Props) {
   return (
     <section aria-label={t.title} style={{ textAlign: 'left', marginBottom: 8, fontSize: 13 }}>
       <h3 style={{ margin: '4px 0' }}>{t.title}</h3>
+      {editingDef && (
+        <div>
+          <strong>{t.editingDef(editingDef.name)}</strong>{' '}
+          <button type="button" onClick={onBack}>
+            {t.back}
+          </button>
+        </div>
+      )}
       {list.length === 0 ? (
         <small>{t.none}</small>
       ) : (
@@ -128,8 +151,11 @@ export function ComponentPanel({ doc, history, pageId, language }: Props) {
                 <small title={t.scope[c.scope ?? 'project']}>
                   {c.scope === 'page' ? '◧' : '◼'} {t.used(used)}
                 </small>
-                <button type="button" onClick={() => place(c.id)}>
+                <button type="button" disabled={!page} onClick={() => place(c.id)}>
                   {t.place}
+                </button>
+                <button type="button" onClick={() => onEdit(c.id)}>
+                  {t.edit}
                 </button>
                 <button
                   type="button"

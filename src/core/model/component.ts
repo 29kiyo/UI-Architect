@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { IdSchema } from './ids'
 import { NodeSchema } from './node'
-import { InstanceOverrideSchema } from './override'
+import { InstanceOverrideSchema, PageOverridesSchema } from './override'
 
 export const ComponentVariantSchema = z.object({
   id: IdSchema,
@@ -20,6 +20,8 @@ export const ComponentDefSchema = z
     name: z.string(),
     rootNodeId: IdSchema,
     nodes: z.record(IdSchema, NodeSchema),
+    // 定義を編集するときのデバイス別上書き(Page と同じ形。インスタンスの描画には使わない)
+    overrides: PageOverridesSchema,
     variants: z.array(ComponentVariantSchema).default([]),
     slots: z.array(ComponentSlotSchema).default([]),
     // 未指定は project。page のときは ownerId(ページ or マスターの ID)専用

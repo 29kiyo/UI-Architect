@@ -43,6 +43,7 @@ function setup() {
     name: 'Button',
     rootNodeId: root.id,
     nodes: { [root.id]: root, [label.id]: label, [slotNode.id]: slotNode },
+    overrides: {},
     variants: [],
     slots: [{ id: 'body', name: 'body', nodeId: slotNode.id }],
   }

@@ -19,6 +19,8 @@ import {
   ComponentPanel,
   ComponentsContext,
   InstancePanel,
+  InstanceExtras,
+  DefinitionPanel,
   Inspector,
   LayerPanel,
   NodesPreview,
@@ -254,6 +256,8 @@ export default function App() {
             language={language}
             onEditDef={setPageId}
           />
+          <InstanceExtras doc={doc} history={history} pageId={pageId} language={language} />
+          <DefinitionPanel doc={doc} history={history} pageId={pageId} language={language} />
           <StatePanel doc={doc} history={history} pageId={pageId} language={language} />
           <TokenPanel tokens={doc.tokens} history={history} language={language} />
         </aside>

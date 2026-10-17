@@ -1,4 +1,5 @@
 import {
+  allPages,
   estimateLayout,
   getParentId,
   groupNodes,
@@ -87,7 +88,7 @@ export function createAutoLayoutCommand(pageId: Id, plan: AutoLayoutPlan): WithC
     command: {
       name: 'auto-layout',
       apply: (d) => {
-        const page = findPage(d.pages, pageId)
+        const page = findPage(allPages(d), pageId)
         const gid = groupNodes(page, plan.ids)
         created.length = 0
         created.push(gid)

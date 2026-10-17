@@ -103,3 +103,8 @@ export const createSetMasterHiddenCommand = (
     else delete page.hiddenMasterIds
   },
 })
+
+// 編集系 Command が対象を探すための一覧(ページ + マスター。どちらも Page と同じ形)
+export function allPages(doc: Pick<UIDocument, 'pages' | 'masters'>): Page[] {
+  return [...doc.pages, ...doc.masters]
+}

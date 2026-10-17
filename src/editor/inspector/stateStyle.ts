@@ -1,4 +1,5 @@
 import {
+  allPages,
   getOverride,
   requireNode,
   resolveNode,
@@ -69,7 +70,7 @@ export function createStateStyleCommand(o: Options): Command {
     name: `state style: ${o.state}`,
     ...(o.coalesceKey ? { coalesceKey: o.coalesceKey } : {}),
     apply: (draft) => {
-      const page = findPage(draft.pages, o.pageId)
+      const page = findPage(allPages(draft), o.pageId)
       for (const w of o.writes) writeState(page, o.deviceId, o.base, o.state, w)
     },
   }

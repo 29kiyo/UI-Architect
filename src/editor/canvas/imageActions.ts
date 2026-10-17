@@ -1,5 +1,6 @@
 import {
   addNode,
+  allPages,
   AssetSchema,
   buildAsset,
   createImageNode,
@@ -30,7 +31,7 @@ export type FileDropAt = {
 export const createAddImagesCommand = (pageId: Id, items: ImageItem[]): Command => ({
   name: items.length === 1 ? 'add-image' : 'add-images',
   apply: (d) => {
-    const page = findPage(d.pages, pageId)
+    const page = findPage(allPages(d), pageId)
     for (const it of items) {
       if (!d.assets.some((a) => a.id === it.asset.id)) d.assets.push(AssetSchema.parse(it.asset))
       addNode(page, structuredClone(it.node), it.parentId)

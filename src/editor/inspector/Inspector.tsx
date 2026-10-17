@@ -10,6 +10,11 @@ import { createAddAssetCommand, prepareImageAsset, type ImageSinks } from '../ca
 import { AssetPicker } from './AssetPicker'
 import { FontPicker } from './FontPicker'
 import { LinkPicker } from './LinkPicker'
+import {
+  createResetHiddenAtDeviceCommand,
+  createSetHiddenAtDeviceCommand,
+  hiddenState,
+} from '../canvas/hiddenCommands'
 import { useSelection } from '../canvas/selection'
 import { PropControl } from './controls'
 import { ColorEndContext } from './LiveColor'
@@ -20,7 +25,7 @@ import {
   isDetachedAt,
   overrideState,
 } from './overrideCommands'
-import { OverrideBar, PropLabel } from './overrideUi'
+import { HiddenRow, OverrideBar, PropLabel } from './overrideUi'
 import { applicableNodes, resolveSelected, shownValue, writesFor } from './multi'
 import { TokenPicker } from './tokenUi'
 import { propRegistry, type PropDef } from './registry'
@@ -183,6 +188,33 @@ export function Inspector({ doc, history, pageId, language, sinks }: Props) {
                 language={language}
                 onDetach={() => runAll('detach', targets.map(createDetachCommand))}
                 onAttach={() => runAll('attach', targets.map(createAttachCommand))}
+              />
+            )}
+            {page && deviceId && (
+              <HiddenRow
+                states={nodes.map((n) => hiddenState(page, deviceId, n.id))}
+                deviceName={doc.devices.find((d) => d.id === deviceId)?.name ?? ''}
+                language={language}
+                onChange={(hidden) =>
+                  history.execute(
+                    createSetHiddenAtDeviceCommand({
+                      pageId: page.id,
+                      deviceId,
+                      base: isBaseDevice(doc.devices, deviceId),
+                      nodeIds: nodes.map((n) => n.id),
+                      hidden,
+                    }),
+                  )
+                }
+                onReset={() =>
+                  history.execute(
+                    createResetHiddenAtDeviceCommand({
+                      pageId: page.id,
+                      deviceId,
+                      nodeIds: nodes.map((n) => n.id),
+                    }),
+                  )
+                }
               />
             )}
             <div style={{ maxHeight: '70vh', overflow: 'auto', border: '1px solid var(--border)' }}>

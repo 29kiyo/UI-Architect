@@ -1,4 +1,5 @@
 import { memo, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { createSetHiddenAtDeviceCommand, hiddenState } from './hiddenCommands'
 import { findEditablePage, type History, type Id, type UIDocument } from '@/core'
 import { isBaseDevice } from './commands'
 import { buildRows, dropPosition, resolveDrop, type DropPos } from './layers'
@@ -55,8 +56,22 @@ export function LayerPanel({ doc, history, pageId, language }: Props) {
   )
   if (!page || !deviceId) return null
 
-  const meta = (id: Id, patch: { hidden?: boolean; locked?: boolean }, label: string) =>
+  const meta = (id: Id, patch: { hidden?: boolean; locked?: boolean }, label: string) => {
+    // 非表示だけはデバイス別(基準デバイスでは共有の値)
+    if (patch.hidden !== undefined && Object.keys(patch).length === 1) {
+      history.execute(
+        createSetHiddenAtDeviceCommand({
+          pageId: page.id,
+          deviceId,
+          base: isBaseDevice(doc.devices, deviceId),
+          nodeIds: [id],
+          hidden: patch.hidden,
+        }),
+      )
+      return
+    }
     history.execute(createNodeMetaCommand(page.id, id, patch, label))
+  }
   const startEdit = (id: Id, name: string) => {
     skipCommit.current = false
     setEditing(id)
@@ -157,7 +172,7 @@ export function LayerPanel({ doc, history, pageId, language }: Props) {
             rawName={row.node.name}
             hasChildren={row.hasChildren}
             collapsed={row.collapsed}
-            hidden={page.nodes[row.id]?.hidden === true}
+            hidden={hiddenState(page, deviceId, row.id).hidden}
             locked={page.nodes[row.id]?.locked === true}
             selected={selectedIds.includes(row.id)}
             editing={editing === row.id}

@@ -108,6 +108,11 @@ export type { FileDropAt, ImageItem, ImageSinks } from './canvas/imageActions'
 export { addFiles, addSvgFiles, isSvgFile } from './canvas/svgActions'
 export { addFontFiles, isFontFile } from './canvas/fontActions'
 export { AssetPanel } from './canvas/AssetPanel'
+export {
+  createSetHiddenAtDeviceCommand,
+  createResetHiddenAtDeviceCommand,
+  hiddenState,
+} from './canvas/hiddenCommands'
 export { PagePanel } from './pages/PagePanel'
 export { MasterPanel } from './pages/MasterPanel'
 export { ComponentPanel } from './component/ComponentPanel'

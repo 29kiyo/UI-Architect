@@ -96,3 +96,57 @@ export function OverrideBar({
     </div>
   )
 }
+
+const HIDDEN_TEXT = {
+  ja: { label: (d: string) => `${d}で非表示`, overridden: 'このデバイスのみ', reset: '共通に戻す' },
+  en: {
+    label: (d: string) => `Hide on ${d}`,
+    overridden: 'This device only',
+    reset: 'Reset to shared',
+  },
+} as const
+
+export function HiddenRow({
+  states,
+  deviceName,
+  language,
+  onChange,
+  onReset,
+}: {
+  states: { hidden: boolean; overridden: boolean }[]
+  deviceName: string
+  language: Lang
+  onChange: (hidden: boolean) => void
+  onReset: () => void
+}) {
+  const t = HIDDEN_TEXT[language]
+  const all = states.length > 0 && states.every((s) => s.hidden)
+  const some = states.some((s) => s.hidden)
+  const ov = states.some((s) => s.overridden)
+  return (
+    <div style={{ margin: '4px 0' }}>
+      <label>
+        <input
+          type="checkbox"
+          checked={all}
+          ref={(el) => {
+            if (el) el.indeterminate = some && !all
+          }}
+          onChange={(e) => onChange(e.target.checked)}
+        />{' '}
+        {t.label(deviceName)}
+      </label>
+      {ov && (
+        <>
+          {' '}
+          <span title={t.overridden} style={{ color: 'var(--accent)' }}>
+            ●
+          </span>
+          <button type="button" title={t.reset} onClick={onReset}>
+            ↺
+          </button>
+        </>
+      )}
+    </div>
+  )
+}

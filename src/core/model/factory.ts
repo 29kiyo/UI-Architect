@@ -47,6 +47,7 @@ export function createEmptyDocument(name = 'Untitled'): UIDocument {
     project: { name, createdAt: now, updatedAt: now },
     devices: [createDevice('pc'), createDevice('mobile')],
     pages: [createPage()],
+    masters: [],
     assets: [],
     tokens: { colors: {}, spacing: {}, fonts: {} },
     variables: [],

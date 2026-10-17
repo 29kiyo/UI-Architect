@@ -7,7 +7,7 @@ import { createInstanceNode } from './ops'
 import { mergeInstanceProps, resolveInstance } from './resolve'
 
 // draft でも通常オブジェクトでも、structuredClone できる素の値にする
-const plain = <T>(v: T): T => (isDraft(v) ? (current(v) as T) : v)
+const plain = <T>(v: T): T => (isDraft(v) ? (current(v as never) as T) : v)
 
 function pageOf(d: UIDocument, pageId: Id): Page {
   const p = allPages(d).find((x) => x.id === pageId)

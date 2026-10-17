@@ -9,6 +9,7 @@ import { createPropsCommand, isBaseDevice } from '../canvas/commands'
 import { createAddAssetCommand, prepareImageAsset, type ImageSinks } from '../canvas/imageActions'
 import { AssetPicker } from './AssetPicker'
 import { FontPicker } from './FontPicker'
+import { LinkPicker } from './LinkPicker'
 import { useSelection } from '../canvas/selection'
 import { PropControl } from './controls'
 import { ColorEndContext } from './LiveColor'
@@ -242,6 +243,35 @@ export function Inspector({ doc, history, pageId, language, sinks }: Props) {
                                 />
                               </>
                             )}
+                            {g === 'content' &&
+                              def.key === 'href' &&
+                              page &&
+                              nodes.length === 1 &&
+                              first && (
+                                <LinkPicker
+                                  doc={doc}
+                                  page={page}
+                                  href={sv.value}
+                                  navMode={first.props.content.navMode}
+                                  navTransition={first.props.content.navTransition}
+                                  language={language}
+                                  onHref={(v) => set(def, v)}
+                                  onMeta={(key, v) =>
+                                    deviceId &&
+                                    history.execute(
+                                      createPropsCommand({
+                                        name: `inspector: ${key}`,
+                                        pageId: page.id,
+                                        deviceId,
+                                        base: true,
+                                        writes: [
+                                          { nodeId: first.id, group: 'content', key, value: v },
+                                        ],
+                                      }),
+                                    )
+                                  }
+                                />
+                              )}
                             {g === 'content' && def.key === 'src' && (
                               <>
                                 <span />

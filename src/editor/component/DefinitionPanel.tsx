@@ -106,7 +106,7 @@ export function DefinitionPanel({ doc, history, pageId, language }: Props) {
     )
     setVariantId(id)
   }
-  const setValue = (d: PropDef, v: string | number, live: boolean) => {
+  const setValue = (d: PropDef, v: string | number, live = false) => {
     if (!vr) return
     history.execute(
       createSetVariantPropCommand({

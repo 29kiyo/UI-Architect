@@ -138,11 +138,10 @@ export const createAddSlotCommand = (o: {
 // 内容が入っているインスタンスがあるか
 export function slotInUse(doc: UIDocument, componentId: Id, slotId: Id): boolean {
   return allPages(doc).some((p) =>
-    Object.values(p.nodes).some(
-      (n) =>
-        n.componentRef?.componentId === componentId &&
-        (n.componentRef.slotContent[slotId]?.length ?? 0) > 0,
-    ),
+    Object.values(p.nodes).some((n) => {
+      const r = n.componentRef
+      return !!r && r.componentId === componentId && (r.slotContent[slotId]?.length ?? 0) > 0
+    }),
   )
 }
 

@@ -16,6 +16,8 @@ import {
   AssetUrlsContext,
   BenchButton,
   Canvas,
+  ComponentPanel,
+  ComponentsContext,
   Inspector,
   LayerPanel,
   NodesPreview,
@@ -200,6 +202,7 @@ export default function App() {
             language={language}
             onSelect={setPageId}
           />
+          <ComponentPanel doc={doc} history={history} pageId={pageId} language={language} />
           <LayerPanel doc={doc} history={history} pageId={pageId} language={language} />
           <AssetPanel
             doc={doc}
@@ -216,14 +219,16 @@ export default function App() {
         </aside>
         <div style={{ flex: 1, minWidth: 0 }}>
           <AssetUrlsContext.Provider value={assetUrls}>
-            <Canvas
-              key={pageId}
-              doc={doc}
-              history={history}
-              pageId={pageId}
-              language={language}
-              onFiles={addImages}
-            />
+            <ComponentsContext.Provider value={doc.components}>
+              <Canvas
+                key={pageId}
+                doc={doc}
+                history={history}
+                pageId={pageId}
+                language={language}
+                onFiles={addImages}
+              />
+            </ComponentsContext.Provider>
           </AssetUrlsContext.Provider>
         </div>
         <aside style={{ width: 300, flexShrink: 0 }}>

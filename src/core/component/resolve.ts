@@ -1,4 +1,4 @@
-import type { Id, InstanceOverride, Node, Props, UIDocument } from '../model'
+import type { ComponentDef, Id, InstanceOverride, Node, Props, UIDocument } from '../model'
 import { resolveProps } from '../device'
 
 export type ResolvedInstance = {
@@ -19,9 +19,17 @@ function apply(node: Node, o: InstanceOverride | undefined): Node {
 // 定義 → バリアント上書き → インスタンス上書き の順に適用した実効ノード群。
 // 参照先の定義が無い / インスタンスでない場合は undefined。
 export function resolveInstance(doc: UIDocument, instance: Node): ResolvedInstance | undefined {
+  return resolveInstanceIn(doc.components, instance)
+}
+
+// 描画用: components だけで展開できる版
+export function resolveInstanceIn(
+  components: ComponentDef[],
+  instance: Pick<Node, 'componentRef' | 'children'>,
+): ResolvedInstance | undefined {
   const ref = instance.componentRef
   if (!ref) return undefined
-  const def = doc.components.find((c) => c.id === ref.componentId)
+  const def = components.find((c) => c.id === ref.componentId)
   if (!def) return undefined
   const variant = ref.variantId ? def.variants.find((v) => v.id === ref.variantId) : undefined
   const slotOf = new Map(def.slots.map((s) => [s.nodeId, s.id]))

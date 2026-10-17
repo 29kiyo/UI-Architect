@@ -208,3 +208,19 @@ export const createRemoveComponentCommand = (componentId: Id): Command => ({
     d.variables = d.variables.filter((v) => !(v.scope === 'component' && v.ownerId === componentId))
   },
 })
+
+// コンポーネント化できない理由(できるなら null)
+export function componentizeBlocker(
+  page: Page,
+  nodeId: Id,
+): 'missing' | 'root' | 'instance' | null {
+  if (!page.nodes[nodeId]) return 'missing'
+  if (nodeId === page.rootNodeId) return 'root'
+  if (subtreeIds(page, nodeId).some((id) => page.nodes[id]?.componentRef)) return 'instance'
+  return null
+}
+
+// そのページ(or マスター)で使える定義: プロジェクト全体 + そのページ専用
+export function componentsForPage(doc: UIDocument, pageId: Id | undefined): ComponentDef[] {
+  return doc.components.filter((c) => c.scope !== 'page' || c.ownerId === pageId)
+}

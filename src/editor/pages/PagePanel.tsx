@@ -3,6 +3,8 @@ import {
   createAddPageCommand,
   createMovePageCommand,
   createPageFor,
+  countPageRefs,
+  createRemovePageCleanCommand,
   createRemovePageCommand,
   createRenamePageCommand,
   createSetHomePageCommand,
@@ -36,7 +38,8 @@ const TEXT = {
     route: 'ルート',
     home: 'ホームに設定',
     isHome: 'ホーム',
-    confirm: 'このページを削除しますか?(Undo で戻せます)',
+    confirm: (n: number) =>
+      `このページを削除しますか?${n > 0 ? `${n} 箇所の参照が解除されます。` : ''}(Undo で戻せます)`,
     invalid: 'ルートに使えない文字があります',
     duplicate: 'そのルートは他のページで使われています',
   },
@@ -51,7 +54,8 @@ const TEXT = {
     route: 'Route',
     home: 'Set as home',
     isHome: 'Home',
-    confirm: 'Delete this page? (can be undone)',
+    confirm: (n: number) =>
+      `Delete this page? ${n > 0 ? `${n} reference(s) will be cleared. ` : ''}(can be undone)`,
     invalid: 'Route contains invalid characters',
     duplicate: 'This route is used by another page',
   },
@@ -76,8 +80,9 @@ export function PagePanel({ doc, history, pageId, language, onSelect }: Props) {
     onSelect(p.id)
   }
   const remove = () => {
-    if (!cur || !canRemovePage(doc) || !window.confirm(t.confirm)) return
-    history.execute(createRemovePageCommand(cur.id))
+    if (!cur || !canRemovePage(doc)) return
+    if (!window.confirm(t.confirm(countPageRefs(doc, cur.id)))) return
+    history.execute(createRemovePageCleanCommand(cur.id, createRemovePageCommand(cur.id)))
   }
   const commitName = (el: HTMLInputElement) => {
     if (!cur) return

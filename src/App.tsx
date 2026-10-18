@@ -19,6 +19,7 @@ import {
   ComponentPanel,
   ComponentsContext,
   InstancePanel,
+  IntegrityPanel,
   InstanceExtras,
   NavMenuPanel,
   DefinitionPanel,
@@ -206,6 +207,7 @@ export default function App() {
             language={language}
             onSelect={setPageId}
           />
+          <IntegrityPanel doc={doc} language={language} onSelectPage={setPageId} />
           <ComponentPanel
             doc={doc}
             history={history}
